@@ -1,16 +1,7 @@
 import React, { useState } from 'react';
 import { GripVertical, Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
 
-interface IntroScreen {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  order: number;
-  active: boolean;
-}
-
-const dummyScreens: IntroScreen[] = [
+const dummyScreens = [
   {
     id: '1',
     title: 'Welcome to Dating App',
@@ -40,7 +31,7 @@ const dummyScreens: IntroScreen[] = [
 export function IntroScreens() {
   const [screens, setScreens] = useState(dummyScreens);
 
-  const moveScreen = (fromIndex: number, toIndex: number) => {
+  const moveScreen = (fromIndex, toIndex) => {
     const newScreens = [...screens];
     const [movedScreen] = newScreens.splice(fromIndex, 1);
     newScreens.splice(toIndex, 0, movedScreen);

@@ -2,35 +2,21 @@ import React, { useState } from 'react';
 import { Search, Download, Filter, Edit, Trash2, CreditCard, X } from 'lucide-react';
 import { formatDate, formatCurrency } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
-import type { Payment } from '../types';
 
-interface PaymentFormData {
-  userId: string;
-  amount: number;
-  status: 'completed' | 'pending' | 'failed';
-  method: string;
-}
-
-interface FilterData {
-  dateRange: string;
-  amountRange: string;
-  paymentMethod: string;
-}
-
-const initialFormData: PaymentFormData = {
+const initialFormData = {
   userId: '',
   amount: 0,
   status: 'completed',
   method: 'Credit Card',
 };
 
-const initialFilterData: FilterData = {
+const initialFilterData = {
   dateRange: 'all',
   amountRange: 'all',
   paymentMethod: 'all',
 };
 
-const dummyPayments: Payment[] = [
+const dummyPayments = [
   {
     id: '1',
     userId: 'user1',
@@ -61,14 +47,14 @@ export function Payments() {
   const [payments, setPayments] = useState(dummyPayments);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [filterData, setFilterData] = useState<FilterData>(initialFilterData);
+  const [filterData, setFilterData] = useState(initialFilterData);
   const [showFilters, setShowFilters] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [formData, setFormData] = useState<PaymentFormData>(initialFormData);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [formData, setFormData] = useState(initialFormData);
 
-  const handleOpenEditModal = (payment: Payment) => {
+  const handleOpenEditModal = (payment) => {
     setSelectedPayment(payment);
     setFormData({
       userId: payment.userId,
@@ -79,7 +65,7 @@ export function Payments() {
     setIsEditModalOpen(true);
   };
 
-  const handleEdit = (e: React.FormEvent) => {
+  const handleEdit = (e) => {
     e.preventDefault();
     if (selectedPayment) {
       setPayments(payments.map(payment =>
@@ -365,7 +351,7 @@ export function Payments() {
               value={formData.status}
               onChange={(e) => setFormData({
                 ...formData,
-                status: e.target.value as 'completed' | 'pending' | 'failed'
+                status: e.target.value
               })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             >

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Bell, Search, Check, Trash2 } from 'lucide-react';
 import { formatDate } from '../lib/utils';
-import type { Notification } from '../types';
 
-const dummyNotifications: Notification[] = [
+const dummyNotifications = [
   {
     id: '1',
     title: 'New User Registration',

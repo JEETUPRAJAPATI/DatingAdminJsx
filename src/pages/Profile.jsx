@@ -2,23 +2,8 @@ import React, { useState } from 'react';
 import { Camera, Save, Lock } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
-interface ProfileData {
-  name: string;
-  email: string;
-  avatar: string;
-  role: string;
-  phone: string;
-  location: string;
-}
-
-interface PasswordData {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
-
 export function Profile() {
-  const [profile, setProfile] = useState<ProfileData>({
+  const [profile, setProfile] = useState({
     name: 'Admin User',
     email: 'admin@example.com',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
@@ -28,26 +13,26 @@ export function Profile() {
   });
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [passwordData, setPasswordData] = useState<PasswordData>({
+  const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
 
-  const handleProfileUpdate = (e: React.FormEvent) => {
+  const handleProfileUpdate = (e) => {
     e.preventDefault();
     // Handle profile update
     console.log('Profile updated:', profile);
   };
 
-  const handlePasswordUpdate = (e: React.FormEvent) => {
+  const handlePasswordUpdate = (e) => {
     e.preventDefault();
     // Handle password update
     console.log('Password updated:', passwordData);
     setIsPasswordModalOpen(false);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       // In a real app, you would upload the file to a server

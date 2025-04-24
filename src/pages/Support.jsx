@@ -2,28 +2,7 @@ import React, { useState } from 'react';
 import { Search, Filter, MessageSquare, User, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 
-interface SupportTicket {
-  id: string;
-  userId: string;
-  userName: string;
-  userAvatar: string;
-  subject: string;
-  message: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: 'account' | 'technical' | 'billing' | 'report' | 'other';
-  createdAt: string;
-  lastUpdated: string;
-  assignedTo?: string;
-  responses: {
-    id: string;
-    message: string;
-    from: 'user' | 'support';
-    timestamp: string;
-  }[];
-}
-
-const dummyTickets: SupportTicket[] = [
+const dummyTickets = [
   {
     id: 'TICKET-001',
     userId: 'user1',
@@ -67,7 +46,7 @@ export function Support() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   const filteredTickets = dummyTickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -169,19 +148,9 @@ export function Support() {
                       {ticket.status === 'closed' && <XCircle className="mr-1 h-3 w-3" />}
                       {ticket.status.replace('_', ' ')}
                     </span>
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      ticket.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                      ticket.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                      ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {ticket.priority}
-                    </span>
                   </div>
                   <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                    {ticket.message.length > 100
-                      ? `${ticket.message.substring(0, 100)}...`
-                      : ticket.message}
+                    {ticket.message}
                   </p>
                   <div className="mt-2 text-xs text-gray-500">
                     {formatDate(ticket.createdAt)}

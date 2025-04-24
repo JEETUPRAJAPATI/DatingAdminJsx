@@ -1,58 +1,14 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Filter, HandIcon as DragHandleDots2Icon, AlertCircle, Settings, BarChart } from 'lucide-react';
+import { GripVertical, Plus, Edit, Trash2, Image as ImageIcon, BarChart3, Users, Crown, UserCheck, UserX, CreditCard, History, BrainCircuit, Bell, AlertTriangle } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
-interface QuizCategory {
-  id: string;
-  name: string;
-  description: string;
-  questionCount: number;
-  active: boolean;
-}
-
-interface Question {
-  id: string;
-  question: string;
-  type: 'MCQ' | 'TRUE_FALSE' | 'OPEN_ENDED';
-  category: string;
-  options?: string[];
-  correctAnswer?: string | string[];
-  points: number;
-  required: boolean;
-  order: number;
-}
-
-interface QuizSettings {
-  questionsPerMatch: number;
-  timeLimit: number;
-  passingScore: number;
-  shuffleQuestions: boolean;
-  showCorrectAnswers: boolean;
-}
-
-interface CategoryFormData {
-  name: string;
-  description: string;
-  active: boolean;
-}
-
-interface QuestionFormData {
-  question: string;
-  type: 'MCQ' | 'TRUE_FALSE' | 'OPEN_ENDED';
-  category: string;
-  options: string[];
-  correctAnswer: string[];
-  points: number;
-  required: boolean;
-}
-
-const initialCategoryForm: CategoryFormData = {
+const initialCategoryForm = {
   name: '',
   description: '',
   active: true,
 };
 
-const initialQuestionForm: QuestionFormData = {
+const initialQuestionForm = {
   question: '',
   type: 'MCQ',
   category: '',
@@ -62,7 +18,7 @@ const initialQuestionForm: QuestionFormData = {
   required: true,
 };
 
-const initialQuizSettings: QuizSettings = {
+const initialQuizSettings = {
   questionsPerMatch: 10,
   timeLimit: 15,
   passingScore: 70,
@@ -70,7 +26,7 @@ const initialQuizSettings: QuizSettings = {
   showCorrectAnswers: false,
 };
 
-const dummyCategories: QuizCategory[] = [
+const dummyCategories = [
   {
     id: '1',
     name: 'Personality',
@@ -94,7 +50,7 @@ const dummyCategories: QuizCategory[] = [
   },
 ];
 
-const dummyQuestions: Question[] = [
+const dummyQuestions = [
   {
     id: '1',
     question: 'What are you looking for in a relationship?',
@@ -143,19 +99,19 @@ export function Questions() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false);
   
-  const [selectedCategory, setSelectedCategory] = useState<QuizCategory | null>(null);
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
   
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deleteType, setDeleteType] = useState<'category' | 'question'>('category');
+  const [deleteType, setDeleteType] = useState('category');
   
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [questionForm, setQuestionForm] = useState(initialQuestionForm);
 
-  const handleOpenCategoryModal = (category: QuizCategory | null = null) => {
+  const handleOpenCategoryModal = (category = null) => {
     if (category) {
       setCategoryForm({
         name: category.name,
@@ -170,7 +126,7 @@ export function Questions() {
     setIsCategoryModalOpen(true);
   };
 
-  const handleOpenQuestionModal = (question: Question | null = null) => {
+  const handleOpenQuestionModal = (question = null) => {
     if (question) {
       setQuestionForm({
         question: question.question,
@@ -189,7 +145,7 @@ export function Questions() {
     setIsQuestionModalOpen(true);
   };
 
-  const handleCategorySubmit = (e: React.FormEvent) => {
+  const handleCategorySubmit = (e) => {
     e.preventDefault();
     if (selectedCategory) {
       setCategories(categories.map(category =>
@@ -208,7 +164,7 @@ export function Questions() {
     setIsCategoryModalOpen(false);
   };
 
-  const handleQuestionSubmit = (e: React.FormEvent) => {
+  const handleQuestionSubmit = (e) => {
     e.preventDefault();
     if (selectedQuestion) {
       setQuestions(questions.map(question =>
@@ -597,7 +553,7 @@ export function Questions() {
                 value={questionForm.type}
                 onChange={(e) => setQuestionForm({
                   ...questionForm,
-                  type: e.target.value as 'MCQ' | 'TRUE_FALSE' | 'OPEN_ENDED',
+                  type: e.target.value,
                   options: e.target.value === 'MCQ' ? [] : undefined,
                   correctAnswer: e.target.value === 'TRUE_FALSE' ? ['true'] : [],
                 })}
