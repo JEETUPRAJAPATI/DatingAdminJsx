@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GripVertical, Plus, Edit, Trash2, Image as ImageIcon, BarChart3, Users, Crown, UserCheck, UserX, CreditCard, History, BrainCircuit, Bell, AlertTriangle } from 'lucide-react';
+import { GripVertical, Plus, Edit, Trash2, Image as ImageIcon, Settings, BarChart, BarChart3, Search, AlertCircle, Users, Crown, UserCheck, UserX, CreditCard, History, BrainCircuit, Bell, AlertTriangle } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
 const initialCategoryForm = {
@@ -98,16 +98,16 @@ export function Questions() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false);
-  
+
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
-  
+
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteType, setDeleteType] = useState('category');
-  
+
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [questionForm, setQuestionForm] = useState(initialQuestionForm);
 
@@ -170,10 +170,10 @@ export function Questions() {
       setQuestions(questions.map(question =>
         question.id === selectedQuestion.id
           ? {
-              ...question,
-              ...questionForm,
-              options: questionForm.type === 'MCQ' ? questionForm.options : undefined,
-            }
+            ...question,
+            ...questionForm,
+            options: questionForm.type === 'MCQ' ? questionForm.options : undefined,
+          }
           : question
       ));
     } else {
@@ -184,7 +184,7 @@ export function Questions() {
         order: questions.length + 1,
       };
       setQuestions([...questions, newQuestion]);
-      
+
       // Update category question count
       setCategories(categories.map(category =>
         category.name === questionForm.category
@@ -418,11 +418,10 @@ export function Questions() {
                         {question.options.map((option, index) => (
                           <span
                             key={index}
-                            className={`rounded-full px-3 py-1 text-sm ${
-                              question.correctAnswer?.includes(option)
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                            }`}
+                            className={`rounded-full px-3 py-1 text-sm ${question.correctAnswer?.includes(option)
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                              }`}
                           >
                             {option}
                           </span>

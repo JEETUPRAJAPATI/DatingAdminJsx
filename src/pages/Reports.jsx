@@ -1,20 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Filter, AlertTriangle, Shield, Ban, MessageSquare } from 'lucide-react';
 
-interface Report {
-  id: string;
-  reportedUserId: string;
-  reportedUserName: string;
-  reportedUserAvatar: string;
-  reporterId: string;
-  reporterName: string;
-  reason: string;
-  status: 'pending' | 'investigating' | 'resolved' | 'dismissed';
-  date: string;
-  description: string;
-}
-
-const dummyReports: Report[] = [
+const dummyReports = [
   {
     id: '1',
     reportedUserId: 'user1',
@@ -45,9 +32,10 @@ export function Reports() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const filteredReports = dummyReports.filter(report => {
-    const matchesSearch = report.reportedUserName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.reporterName.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredReports = dummyReports.filter((report) => {
+    const matchesSearch =
+      report.reportedUserName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.reporterName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -102,12 +90,16 @@ export function Reports() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium">{report.reportedUserName}</h3>
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      report.status === 'investigating' ? 'bg-blue-100 text-blue-800' :
-                      report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${report.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : report.status === 'investigating'
+                          ? 'bg-blue-100 text-blue-800'
+                          : report.status === 'resolved'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                    >
                       {report.status}
                     </span>
                   </div>
@@ -120,9 +112,7 @@ export function Reports() {
                       {report.reason}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                    {report.description}
-                  </p>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{report.description}</p>
                 </div>
               </div>
               <div className="flex space-x-2">

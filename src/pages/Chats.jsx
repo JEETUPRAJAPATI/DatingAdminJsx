@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Send, Smile, Image as ImageIcon, MoreVertical, Phone, Video, Ban, X } from 'lucide-react';
+import { Search, MessageSquare, Flag, Trash2, Plus, Edit, Send, Smile, Image as ImageIcon, MoreVertical, Phone, Video, Ban, X } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 
 const dummyChats = [
@@ -119,7 +119,7 @@ export function Chats() {
   }, [messages]);
 
   const filteredChats = dummyChats.filter(chat =>
-    chat.participants.some(p => 
+    chat.participants.some(p =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -146,9 +146,8 @@ export function Chats() {
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col lg:flex-row lg:space-x-6">
       {/* Chat List */}
-      <div className={`w-full border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 lg:w-1/3 ${
-        showMobileChat ? 'hidden lg:block' : 'block'
-      }`}>
+      <div className={`w-full border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 lg:w-1/3 ${showMobileChat ? 'hidden lg:block' : 'block'
+        }`}>
         <div className="border-b border-gray-200 p-4 dark:border-gray-700">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -166,9 +165,8 @@ export function Chats() {
           {filteredChats.map((chat) => (
             <button
               key={chat.id}
-              className={`w-full border-b border-gray-200 p-4 text-left transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 ${
-                selectedChat?.id === chat.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-              }`}
+              className={`w-full border-b border-gray-200 p-4 text-left transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 ${selectedChat?.id === chat.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                }`}
               onClick={() => {
                 setSelectedChat(chat);
                 setShowMobileChat(true);
@@ -210,9 +208,8 @@ export function Chats() {
       </div>
 
       {/* Chat Window */}
-      <div className={`flex flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 ${
-        !showMobileChat ? 'hidden lg:flex' : 'flex'
-      }`}>
+      <div className={`flex flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 ${!showMobileChat ? 'hidden lg:flex' : 'flex'
+        }`}>
         {selectedChat ? (
           <>
             {/* Chat Header */}
@@ -273,11 +270,10 @@ export function Chats() {
                       />
                       <div>
                         {message.type === 'text' ? (
-                          <div className={`rounded-lg px-4 py-2 ${
-                            message.senderId === 'admin'
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700'
-                          }`}>
+                          <div className={`rounded-lg px-4 py-2 ${message.senderId === 'admin'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700'
+                            }`}>
                             <p>{message.message}</p>
                           </div>
                         ) : (
