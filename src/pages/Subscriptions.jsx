@@ -1,72 +1,21 @@
-import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Check, X, CreditCard, Crown, Users, Zap, Shield, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Edit, Trash2, CreditCard, Crown } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
+import { toast } from 'react-hot-toast';
+import * as subscriptionService from '../services/subscription';
 
 const initialFormData = {
   name: '',
   price: 0,
-  duration: 30,
+  duration_days: 30,
   features: [],
-  active: true,
-  highlight: false,
-};
-
-const dummySubscriptions = [
-  {
-    id: '1',
-    name: 'Premium Monthly',
-    price: 9.99,
-    duration: 30,
-    features: [
-      'Unlimited Likes',
-      'See Who Likes You',
-      'Advanced Filters',
-      'Priority Support',
-      'Boost Profile',
-    ],
-    active: true,
-    highlight: false,
-  },
-  {
-    id: '2',
-    name: 'Premium Yearly',
-    price: 99.99,
-    duration: 365,
-    features: [
-      'All Monthly Features',
-      '2 Free Boosts/month',
-      'Profile Verification Badge',
-      'Ad-free Experience',
-      'Exclusive Events Access',
-    ],
-    active: true,
-    highlight: true,
-  },
-  {
-    id: '3',
-    name: 'Basic',
-    price: 4.99,
-    duration: 30,
-    features: [
-      'Extended Likes',
-      'Basic Filters',
-      'Standard Support',
-    ],
-    active: false,
-    highlight: false,
-  },
-];
-
-const featureIcons = {
-  'Unlimited Likes': Users,
-  'See Who Likes You': Crown,
-  'Advanced Filters': Shield,
-  'Priority Support': Zap,
-  'Boost Profile': Star,
+  status: 'active',
+  isPopular: false,
+  description: ''
 };
 
 export function Subscriptions() {
-  const [subscriptions, setSubscriptions] = useState(dummySubscriptions);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showActive, setShowActive] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,16 +23,36 @@ export function Subscriptions() {
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const [newFeature, setNewFeature] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSubscriptions();
+  }, []);
+
+  const fetchSubscriptions = async () => {
+    try {
+      setIsLoading(true);
+      const response = await subscriptionService.getAllSubscriptions();
+      if (response.status && response.plans) {
+        setSubscriptions(response.plans);
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to fetch subscriptions');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleOpenModal = (subscription = null) => {
     if (subscription) {
       setFormData({
         name: subscription.name,
         price: subscription.price,
-        duration: subscription.duration,
+        duration_days: subscription.duration_days,
         features: [...subscription.features],
-        active: subscription.active,
-        highlight: subscription.highlight,
+        status: subscription.status,
+        isPopular: subscription.isPopular,
+        description: subscription.description || ''
       });
       setSelectedSubscription(subscription);
     } else {
@@ -93,29 +62,49 @@ export function Subscriptions() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedSubscription) {
-      setSubscriptions(subscriptions.map(subscription =>
-        subscription.id === selectedSubscription.id
-          ? { ...subscription, ...formData }
-          : subscription
-      ));
-    } else {
-      const newSubscription = {
-        id: String(subscriptions.length + 1),
-        ...formData,
-      };
-      setSubscriptions([...subscriptions, newSubscription]);
+    try {
+      if (selectedSubscription) {
+        const response = await subscriptionService.updateSubscription(selectedSubscription.id, formData);
+        if (response.status) {
+          toast.success('Subscription updated successfully');
+          await fetchSubscriptions();
+        }
+      } else {
+        const response = await subscriptionService.createSubscription(formData);
+        if (response.status) {
+          toast.success('Subscription created successfully');
+          await fetchSubscriptions();
+        }
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error(error.message);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedSubscription) {
-      setSubscriptions(subscriptions.filter(subscription => subscription.id !== selectedSubscription.id));
-      setIsDeleteModalOpen(false);
-      setSelectedSubscription(null);
+      try {
+        await subscriptionService.updateSubscriptionStatus(selectedSubscription.id, 'inactive');
+        toast.success('Subscription deleted successfully');
+        await fetchSubscriptions();
+        setIsDeleteModalOpen(false);
+        setSelectedSubscription(null);
+      } catch (error) {
+        toast.error(error.message);
+      }
+    }
+  };
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      await subscriptionService.updateSubscriptionStatus(id, status);
+      toast.success('Status updated successfully');
+      await fetchSubscriptions();
+    } catch (error) {
+      toast.error(error.message);
     }
   };
 
@@ -138,13 +127,33 @@ export function Subscriptions() {
 
   const filteredSubscriptions = subscriptions.filter(subscription => {
     const matchesSearch = subscription.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = showActive === null || subscription.active === showActive;
+    const matchesStatus = showActive === null || subscription.status === (showActive ? 'active' : 'inactive');
     return matchesSearch && matchesStatus;
   });
 
-  const getFeatureIcon = (feature) => {
-    const IconComponent = featureIcons[feature];
-    return IconComponent ? <IconComponent className="h-4 w-4" /> : <Check className="h-4 w-4" />;
+  const renderSkeleton = () => {
+    return Array(3).fill(null).map((_, index) => (
+      <div key={index} className="relative rounded-xl border-2 border-gray-200 bg-white p-6 animate-pulse dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-6 w-32 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+            <div className="h-6 w-20 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+          <div className="flex items-center">
+            <div className="h-8 w-24 rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div className="ml-2 h-4 w-16 rounded bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+            <div className="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+        </div>
+      </div>
+    ));
   };
 
   return (
@@ -189,77 +198,74 @@ export function Subscriptions() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredSubscriptions.map((subscription) => (
-          <div
-            key={subscription.id}
-            className={`relative rounded-xl border-2 bg-white p-6 transition-all hover:shadow-lg dark:bg-gray-800 ${
-              subscription.highlight
+        {isLoading ? (
+          renderSkeleton()
+        ) : (
+          filteredSubscriptions.map((subscription) => (
+            <div
+              key={subscription.id}
+              className={`relative rounded-xl border-2 bg-white p-6 transition-all hover:shadow-lg dark:bg-gray-800 ${subscription.isPopular
                 ? 'border-blue-500 shadow-blue-100 dark:shadow-blue-900/20'
                 : 'border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            {subscription.highlight && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-500 px-4 py-1 text-xs font-semibold text-white">
-                Most Popular
-              </div>
-            )}
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold">{subscription.name}</h3>
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    subscription.active
+                }`}
+            >
+              {subscription.isPopular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-500 px-4 py-1 text-xs font-semibold text-white">
+                  Most Popular
+                </div>
+              )}
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold">{subscription.name}</h3>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${subscription.status === 'active'
                       ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {subscription.active ? (
-                    <Check className="mr-1 h-3 w-3" />
-                  ) : (
-                    <X className="mr-1 h-3 w-3" />
-                  )}
-                  {subscription.active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-              <div className="mt-4 flex items-center">
-                <CreditCard className="mr-2 h-6 w-6 text-blue-500" />
-                <span className="text-3xl font-bold text-blue-600">
-                  ${subscription.price}
-                </span>
-                <span className="ml-2 text-sm text-gray-500">
-                  /{subscription.duration} days
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {subscription.features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                  {getFeatureIcon(feature)}
-                  <span className="text-sm">{feature}</span>
+                      }`}
+                  >
+                    {subscription.status}
+                  </span>
                 </div>
-              ))}
-            </div>
+                <div className="mt-4 flex items-center">
+                  <CreditCard className="mr-2 h-6 w-6 text-blue-500" />
+                  <span className="text-3xl font-bold text-blue-600">
+                    ${subscription.price}
+                  </span>
+                  <span className="ml-2 text-sm text-gray-500">
+                    /{subscription.duration_days} days
+                  </span>
+                </div>
+              </div>
 
-            <div className="mt-6 flex justify-end space-x-2">
-              <button
-                onClick={() => handleOpenModal(subscription)}
-                className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
-              >
-                <Edit className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedSubscription(subscription);
-                  setIsDeleteModalOpen(true);
-                }}
-                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="space-y-3">
+                {subscription.features.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <Crown className="h-4 w-4" />
+                    <span className="text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-2">
+                <button
+                  onClick={() => handleOpenModal(subscription)}
+                  className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedSubscription(subscription);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <Modal
@@ -303,11 +309,22 @@ export function Subscriptions() {
                 type="number"
                 required
                 min="1"
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+                value={formData.duration_days}
+                onChange={(e) => setFormData({ ...formData, duration_days: Number(e.target.value) })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              rows={3}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -331,7 +348,7 @@ export function Subscriptions() {
                     onClick={() => removeFeature(index)}
                     className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
-                    <X className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -363,8 +380,8 @@ export function Subscriptions() {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={formData.active}
-                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                checked={formData.status === 'active'}
+                onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'active' : 'inactive' })}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Active</span>
@@ -372,8 +389,8 @@ export function Subscriptions() {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={formData.highlight}
-                onChange={(e) => setFormData({ ...formData, highlight: e.target.checked })}
+                checked={formData.isPopular}
+                onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Highlight as Popular</span>

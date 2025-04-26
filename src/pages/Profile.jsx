@@ -1,46 +1,132 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Save, Lock } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
+import { toast } from 'react-hot-toast';
+import * as profileService from '../services/profile';
+import { useAuthStore } from '../store/useAuthStore';
 
 export function Profile() {
+  const { admin, setAdmin, logout } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState({
-    name: 'Admin User',
-    email: 'admin@example.com',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
-    role: 'Super Admin',
-    phone: '+1 (555) 123-4567',
-    location: 'New York, USA',
+    name: '',
+    email: '',
+    mobile: '',
+    role: '',
+    profile_image: null
   });
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
   });
 
-  const handleProfileUpdate = (e) => {
-    e.preventDefault();
-    // Handle profile update
-    console.log('Profile updated:', profile);
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setIsLoading(true);
+      const response = await profileService.getProfile();
+      if (response.status && response.profile) {
+        setProfile(response.profile);
+        setAdmin(response.profile);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch profile');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handlePasswordUpdate = (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    // Handle password update
-    console.log('Password updated:', passwordData);
-    setIsPasswordModalOpen(false);
+    try {
+      const response = await profileService.updateProfile(profile);
+      if (response.status) {
+        toast.success('Profile updated successfully');
+        setAdmin(response.profile);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    try {
+      const response = await profileService.changePassword(passwordData);
+      if (response.status) {
+        toast.success('Password changed successfully');
+        setIsPasswordModalOpen(false);
+        setPasswordData({
+          current_password: '',
+          new_password: '',
+          confirm_password: ''
+        });
+        // Logout user after password change
+        logout();
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you would upload the file to a server
-      // For demo, we'll just create a local URL
-      const url = URL.createObjectURL(file);
-      setProfile({ ...profile, avatar: url });
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      setProfile({ ...profile, profile_image: file });
     }
   };
+
+  const renderSkeleton = () => (
+    <div className="animate-pulse space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="h-8 w-48 rounded bg-gray-200 dark:bg-gray-700"></div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div className="h-6 w-32 rounded bg-gray-200 dark:bg-gray-700"></div>
+          <div className="mt-4 flex items-center justify-center">
+            <div className="h-32 w-32 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+          <div className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <div className="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-10 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-16 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-10 w-full rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div className="h-6 w-24 rounded bg-gray-200 dark:bg-gray-700"></div>
+          <div className="mt-6">
+            <div className="h-10 w-48 rounded bg-gray-200 dark:bg-gray-700"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
+    return renderSkeleton();
+  }
 
   return (
     <div className="space-y-6">
@@ -54,13 +140,14 @@ export function Profile() {
           <div className="mt-4 flex items-center justify-center">
             <div className="relative">
               <img
-                src={profile.avatar}
+                src={profile.profile_image instanceof File ? URL.createObjectURL(profile.profile_image) :
+                  profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`}
                 alt={profile.name}
                 className="h-32 w-32 rounded-full object-cover"
               />
               <label
                 htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 rounded-full bg-blue-500 p-2 text-white hover:bg-blue-600"
+                className="absolute bottom-0 right-0 cursor-pointer rounded-full bg-blue-500 p-2 text-white hover:bg-blue-600"
               >
                 <Camera className="h-4 w-4" />
                 <input
@@ -93,29 +180,18 @@ export function Profile() {
               <input
                 type="email"
                 value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                disabled
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Phone
+                Mobile
               </label>
               <input
                 type="tel"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Location
-              </label>
-              <input
-                type="text"
-                value={profile.location}
-                onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                value={profile.mobile}
+                onChange={(e) => setProfile({ ...profile, mobile: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               />
             </div>
@@ -169,8 +245,8 @@ export function Profile() {
             <input
               type="password"
               required
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+              value={passwordData.current_password}
+              onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             />
           </div>
@@ -181,8 +257,8 @@ export function Profile() {
             <input
               type="password"
               required
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+              value={passwordData.new_password}
+              onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             />
           </div>
@@ -193,8 +269,8 @@ export function Profile() {
             <input
               type="password"
               required
-              value={passwordData.confirmPassword}
-              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+              value={passwordData.confirm_password}
+              onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             />
           </div>

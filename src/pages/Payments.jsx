@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Download, Filter, Edit, Trash2, CreditCard, X } from 'lucide-react';
 import { formatDate, formatCurrency } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
+import { toast } from 'react-hot-toast';
+import * as paymentService from '../services/payment';
 
 const initialFormData = {
-  userId: '',
   amount: 0,
   status: 'completed',
-  method: 'Credit Card',
+  plan_name: ''
 };
 
 const initialFilterData = {
@@ -16,35 +17,13 @@ const initialFilterData = {
   paymentMethod: 'all',
 };
 
-const dummyPayments = [
-  {
-    id: '1',
-    userId: 'user1',
-    amount: 99.99,
-    status: 'completed',
-    method: 'Credit Card',
-    date: '2024-03-10T10:30:00',
-  },
-  {
-    id: '2',
-    userId: 'user2',
-    amount: 49.99,
-    status: 'pending',
-    method: 'PayPal',
-    date: '2024-03-09T15:45:00',
-  },
-  {
-    id: '3',
-    userId: 'user3',
-    amount: 149.99,
-    status: 'failed',
-    method: 'Bank Transfer',
-    date: '2024-03-08T09:15:00',
-  },
-];
-
 export function Payments() {
-  const [payments, setPayments] = useState(dummyPayments);
+  const [payments, setPayments] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalRecords: 0
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [filterData, setFilterData] = useState(initialFilterData);
@@ -53,52 +32,102 @@ export function Payments() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleOpenEditModal = (payment) => {
-    setSelectedPayment(payment);
-    setFormData({
-      userId: payment.userId,
-      amount: payment.amount,
-      status: payment.status,
-      method: payment.method,
-    });
-    setIsEditModalOpen(true);
-  };
+  useEffect(() => {
+    fetchPayments();
+  }, [pagination.currentPage]);
 
-  const handleEdit = (e) => {
-    e.preventDefault();
-    if (selectedPayment) {
-      setPayments(payments.map(payment =>
-        payment.id === selectedPayment.id
-          ? { ...payment, ...formData }
-          : payment
-      ));
-      setIsEditModalOpen(false);
+  const fetchPayments = async () => {
+    try {
+      setIsLoading(true);
+      const response = await paymentService.getAllPayments(pagination.currentPage);
+      if (response.status && response.data) {
+        setPayments(response.data.payments);
+        setPagination({
+          currentPage: response.data.current_page,
+          totalPages: response.data.total_pages,
+          totalRecords: response.data.total_records
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to fetch payments');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = () => {
-    if (selectedPayment) {
-      setPayments(payments.filter(payment => payment.id !== selectedPayment.id));
-      setIsDeleteModalOpen(false);
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    try {
+      if (selectedPayment) {
+        const response = await paymentService.updatePayment(selectedPayment.id, formData);
+        if (response.status) {
+          toast.success('Payment updated successfully');
+          await fetchPayments();
+          setIsEditModalOpen(false);
+        }
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      if (selectedPayment) {
+        const response = await paymentService.deletePayment(selectedPayment.id);
+        if (response.status) {
+          toast.success('Payment deleted successfully');
+          await fetchPayments();
+          setIsDeleteModalOpen(false);
+          setSelectedPayment(null);
+        }
+      }
+    } catch (error) {
+      toast.error(error.message);
     }
   };
 
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = payment.userId.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = payment.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.transaction_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
     const matchesDateRange = filterData.dateRange === 'all' ||
-      (filterData.dateRange === 'today' && new Date(payment.date).toDateString() === new Date().toDateString()) ||
-      (filterData.dateRange === 'week' && new Date(payment.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
-      (filterData.dateRange === 'month' && new Date(payment.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+      (filterData.dateRange === 'today' && new Date(payment.created_at).toDateString() === new Date().toDateString()) ||
+      (filterData.dateRange === 'week' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterData.dateRange === 'month' && new Date(payment.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
     const matchesAmountRange = filterData.amountRange === 'all' ||
       (filterData.amountRange === 'under50' && payment.amount < 50) ||
       (filterData.amountRange === '50to100' && payment.amount >= 50 && payment.amount <= 100) ||
       (filterData.amountRange === 'over100' && payment.amount > 100);
-    const matchesPaymentMethod = filterData.paymentMethod === 'all' || payment.method === filterData.paymentMethod;
+    const matchesPaymentMethod = filterData.paymentMethod === 'all' || payment.payment_method === filterData.paymentMethod;
 
     return matchesSearch && matchesStatus && matchesDateRange && matchesAmountRange && matchesPaymentMethod;
   });
+
+  const renderSkeleton = () => (
+    <div className="space-y-4">
+      {[1, 2, 3].map((index) => (
+        <div key={index} className="animate-pulse rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div className="flex items-center justify-between">
+            <div className="space-y-3 w-full">
+              <div className="h-4 w-1/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="flex gap-2">
+                <div className="h-6 w-20 rounded bg-gray-200 dark:bg-gray-700"></div>
+                <div className="h-6 w-24 rounded bg-gray-200 dark:bg-gray-700"></div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -117,7 +146,7 @@ export function Payments() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="search"
-            placeholder="Search by user ID..."
+            placeholder="Search by user or transaction ID..."
             className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -199,9 +228,9 @@ export function Payments() {
                     onChange={(e) => setFilterData({ ...filterData, paymentMethod: e.target.value })}
                   >
                     <option value="all">All Methods</option>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="PayPal">PayPal</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="razorpay">Razorpay</option>
+                    <option value="stripe">Stripe</option>
+                    <option value="paypal">PayPal</option>
                   </select>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -227,90 +256,124 @@ export function Payments() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Transaction ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                User ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Amount
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Method
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-            {filteredPayments.map((payment) => (
-              <tr key={payment.id}>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  {payment.id}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
-                  {payment.userId}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
-                  {formatCurrency(payment.amount)}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4">
-                  <span
-                    className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                      payment.status === 'completed'
+      {isLoading ? (
+        renderSkeleton()
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Transaction ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Method
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+              {filteredPayments.map((payment) => (
+                <tr key={payment.id}>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {payment.transaction_id}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    {payment.user_name}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    {formatCurrency(payment.amount)}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${payment.status === 'completed'
                         ? 'bg-green-100 text-green-800'
                         : payment.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {payment.status}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    {payment.method}
-                  </div>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  {formatDate(payment.date)}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => handleOpenEditModal(payment)}
-                      className="text-blue-600 hover:text-blue-900"
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                        }`}
                     >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedPayment(payment);
-                        setIsDeleteModalOpen(true);
-                      }}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      {payment.status}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center">
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      {payment.payment_method}
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {formatDate(payment.created_at)}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setSelectedPayment(payment);
+                          setFormData({
+                            amount: payment.amount,
+                            status: payment.status,
+                            plan_name: payment.plan_name
+                          });
+                          setIsEditModalOpen(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedPayment(payment);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Showing {filteredPayments.length} of {pagination.totalRecords} payments
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+            disabled={pagination.currentPage === 1}
+            className="rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+            disabled={pagination.currentPage === pagination.totalPages}
+            className="rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {/* Edit Payment Modal */}
@@ -320,17 +383,6 @@ export function Payments() {
         title="Edit Payment"
       >
         <form onSubmit={handleEdit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              User ID
-            </label>
-            <input
-              type="text"
-              value={formData.userId}
-              onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            />
-          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Amount
@@ -349,10 +401,7 @@ export function Payments() {
             </label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({
-                ...formData,
-                status: e.target.value
-              })}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             >
               <option value="completed">Completed</option>
@@ -362,17 +411,14 @@ export function Payments() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Payment Method
+              Plan Name
             </label>
-            <select
-              value={formData.method}
-              onChange={(e) => setFormData({ ...formData, method: e.target.value })}
+            <input
+              type="text"
+              value={formData.plan_name}
+              onChange={(e) => setFormData({ ...formData, plan_name: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            >
-              <option value="Credit Card">Credit Card</option>
-              <option value="PayPal">PayPal</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-            </select>
+            />
           </div>
           <div className="mt-6 flex justify-end gap-2">
             <button

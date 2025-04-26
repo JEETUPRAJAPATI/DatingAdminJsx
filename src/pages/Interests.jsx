@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Tag, Heart, Music, Camera, Gamepad, Book, Utensils, Plane, X } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Card, CardContent } from '../components/ui/Card';
 import { Filters, FilterDropdown } from '../components/ui/Filters';
+import { toast } from 'react-hot-toast';
+import * as interestService from '../services/interests';
 
 const categoryIcons = {
   'Hobbies': Heart,
@@ -22,64 +24,42 @@ const initialFormData = {
   color: '#3B82F6',
 };
 
-const dummyInterests = [
-  {
-    id: '1',
-    name: 'Photography',
-    category: 'Photography',
-    usageCount: 1250,
-    active: true,
-    icon: 'Photography',
-    color: '#3B82F6',
-  },
-  {
-    id: '2',
-    name: 'Hiking',
-    category: 'Hobbies',
-    usageCount: 980,
-    active: true,
-    icon: 'Hobbies',
-    color: '#EF4444',
-  },
-  {
-    id: '3',
-    name: 'Cooking',
-    category: 'Food',
-    usageCount: 1500,
-    active: true,
-    icon: 'Food',
-    color: '#10B981',
-  },
-  {
-    id: '4',
-    name: 'Gaming',
-    category: 'Gaming',
-    usageCount: 2100,
-    active: true,
-    icon: 'Gaming',
-    color: '#8B5CF6',
-  },
-];
-
 export function Interests() {
-  const [interests, setInterests] = useState(dummyInterests);
+  const [interests, setInterests] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedInterest, setSelectedInterest] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const categories = Array.from(new Set(interests.map(interest => interest.category)));
+  useEffect(() => {
+    fetchInterests();
+  }, []);
+
+  const fetchInterests = async () => {
+    try {
+      setIsLoading(true);
+      const response = await interestService.getAllInterests();
+      if (response.status && response.interests) {
+        setInterests(response.interests);
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to fetch interests');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleOpenModal = (interest = null) => {
     if (interest) {
       setFormData({
         name: interest.name,
-        category: interest.category,
-        active: interest.active,
-        icon: interest.icon,
-        color: interest.color,
+        category: interest.category || 'Hobbies',
+        active: true,
+        icon: interest.icon || 'Hobbies',
+        color: interest.color || '#3B82F6',
       });
       setSelectedInterest(interest);
     } else {
@@ -89,38 +69,69 @@ export function Interests() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedInterest) {
-      setInterests(interests.map(interest =>
-        interest.id === selectedInterest.id
-          ? { ...interest, ...formData }
-          : interest
-      ));
-    } else {
-      const newInterest = {
-        id: String(interests.length + 1),
-        ...formData,
-        usageCount: 0,
-      };
-      setInterests([...interests, newInterest]);
+    try {
+      if (selectedInterest) {
+        const response = await interestService.updateInterest(selectedInterest.id, { name: formData.name });
+        if (response.status) {
+          toast.success('Interest updated successfully');
+          await fetchInterests();
+        }
+      } else {
+        const response = await interestService.createInterest({ name: formData.name });
+        if (response.status) {
+          toast.success('Interest created successfully');
+          await fetchInterests();
+        }
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error(error.message);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedInterest) {
-      setInterests(interests.filter(interest => interest.id !== selectedInterest.id));
-      setIsDeleteModalOpen(false);
-      setSelectedInterest(null);
+      try {
+        const response = await interestService.deleteInterest(selectedInterest.id);
+        if (response.status) {
+          toast.success('Interest deleted successfully');
+          await fetchInterests();
+          setIsDeleteModalOpen(false);
+          setSelectedInterest(null);
+        }
+      } catch (error) {
+        toast.error(error.message);
+      }
     }
   };
 
   const filteredInterests = interests.filter(interest => {
     const matchesSearch = interest.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || interest.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
+
+  const renderSkeleton = () => {
+    return Array(6).fill(null).map((_, index) => (
+      <Card key={index} className="group relative animate-pulse transition-all hover:shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="space-y-3 w-full">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-700"></div>
+                <div className="h-6 w-32 rounded bg-gray-200 dark:bg-gray-700"></div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <div className="h-5 w-20 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                <div className="h-5 w-24 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ));
+  };
 
   return (
     <div className="space-y-6">
@@ -147,7 +158,7 @@ export function Interests() {
           label="All Categories"
           value={categoryFilter}
           onChange={setCategoryFilter}
-          options={categories.map(category => ({
+          options={Object.keys(categoryIcons).map(category => ({
             value: category,
             label: category,
           }))}
@@ -155,73 +166,56 @@ export function Interests() {
       </Filters>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredInterests.map((interest) => {
-          const IconComponent = categoryIcons[interest.icon];
-          return (
-            <Card
-              key={interest.id}
-              className="group relative transition-all hover:shadow-lg"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="rounded-lg p-2"
-                        style={{ backgroundColor: `${interest.color}20` }}
-                      >
-                        {IconComponent && (
+        {isLoading ? (
+          renderSkeleton()
+        ) : (
+          filteredInterests.map((interest) => {
+            const IconComponent = categoryIcons[interest.icon] || Tag;
+            return (
+              <Card
+                key={interest.id}
+                className="group relative transition-all hover:shadow-lg"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="rounded-lg p-2"
+                          style={{ backgroundColor: `${interest.color || '#3B82F6'}20` }}
+                        >
                           <IconComponent
                             className="h-6 w-6"
-                            style={{ color: interest.color }}
+                            style={{ color: interest.color || '#3B82F6' }}
                           />
-                        )}
+                        </div>
+                        <h3 className="text-lg font-medium">{interest.name}</h3>
                       </div>
-                      <h3 className="text-lg font-medium">{interest.name}</h3>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span
-                        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        style={{
-                          backgroundColor: `${interest.color}20`,
-                          color: interest.color,
-                        }}
+
+                    <div className="absolute right-4 top-4 flex space-x-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={() => handleOpenModal(interest)}
+                        className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
                       >
-                        {interest.category}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                        {interest.usageCount.toLocaleString()} users
-                      </span>
-                      {interest.active && (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/20 dark:text-green-300">
-                          Active
-                        </span>
-                      )}
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedInterest(interest);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="absolute right-4 top-4 flex space-x-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    onClick={() => handleOpenModal(interest)}
-                    className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedInterest(interest);
-                      setIsDeleteModalOpen(true);
-                    }}
-                    className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </div>
 
       <Modal
@@ -241,63 +235,6 @@ export function Interests() {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Category
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => {
-                const category = e.target.value;
-                setFormData({
-                  ...formData,
-                  category,
-                  icon: category,
-                });
-              }}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            >
-              {Object.keys(categoryIcons).map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Color
-            </label>
-            <div className="mt-1 flex items-center gap-4">
-              <input
-                type="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="h-10 w-20 rounded-lg border border-gray-300"
-              />
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg"
-                style={{ backgroundColor: `${formData.color}20` }}
-              >
-                {categoryIcons[formData.icon] && React.createElement(categoryIcons[formData.icon], {
-                  className: "h-6 w-6",
-                  style: { color: formData.color }
-                })}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="active"
-              checked={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="active" className="ml-2 text-sm text-gray-600 dark:text-gray-300">
-              Active
-            </label>
           </div>
           <div className="mt-6 flex justify-end gap-2">
             <button

@@ -1,446 +1,415 @@
-import React, { useState } from 'react';
-import {
-  User,
-  Search,
-  Filter,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Download,
-  Plus,
-  MapPin,
-  Calendar,
-  Crown,
-  Ban,
-  Eye,
-  MessageSquare,
-  Shield,
-  AlertTriangle,
-} from 'lucide-react';
-import { formatDate } from '../lib/utils';
+import React, { useState, useEffect } from 'react';
+import { User, Search, Filter, Edit, Trash2, Eye, Plus, Ban, CheckCircle, Camera, Upload, X } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
+import { toast } from 'react-hot-toast';
+import * as userService from '../services/user';
+import * as locationService from '../services/location';
+import * as interestService from '../services/interests';
 
 const initialFormData = {
   name: '',
   email: '',
-  status: 'active',
-  location: {
-    city: '',
-    state: '',
-  },
+  password: '',
+  mobile: '',
+  i_am: 'Male',
+  interested_in: 'Female',
   age: 18,
-  gender: 'Male',
-};
-
-const initialFilterOptions = {
-  status: 'all',
-  premium: 'all',
-  age: 'all',
-  gender: 'all',
-  location: 'all',
-  joinDate: 'all',
-};
-
-const dummyUsers = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    avatar: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop',
-    status: 'active',
-    premium: true,
-    location: { city: 'New York', state: 'NY' },
-    age: 28,
-    gender: 'Male',
-    joinedAt: '2024-01-15',
-    lastActive: '2024-03-10',
-    bio: 'Software engineer passionate about technology and innovation.',
-    interests: ['Photography', 'Travel', 'Coding'],
-    matches: 15,
-    reportCount: 0,
+  about: '',
+  likes: [],
+  interests: [],
+  hobbies: [],
+  skin_color: '',
+  height: '',
+  weight: '',
+  address: {
+    country: '',
+    state: '',
+    city: '',
+    pincode: '',
+    locality: ''
   },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-    status: 'active',
-    premium: false,
-    location: { city: 'Los Angeles', state: 'CA' },
-    age: 24,
-    gender: 'Female',
-    joinedAt: '2024-02-01',
-    lastActive: '2024-03-09',
-    bio: 'Artist and designer looking for creative connections.',
-    interests: ['Art', 'Music', 'Design'],
-    matches: 23,
-    reportCount: 1,
-  },
-];
+  profession: '',
+  marital_status: 'unmarried',
+  category: 'Serious Relationship',
+  profile_image: null,
+  cover_image: null
+};
 
 export function Users() {
-  const [users, setUsers] = useState(dummyUsers);
+  const [users, setUsers] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0
+  });
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterOptions, setFilterOptions] = useState(initialFilterOptions);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [interests, setInterests] = useState([]);
 
-  const handleOpenModal = (user = null) => {
+  useEffect(() => {
+    fetchUsers();
+    fetchCountries();
+    fetchInterests();
+  }, []);
+
+  const fetchUsers = async (page = 1) => {
+    try {
+      setIsLoading(true);
+      const response = await userService.getAllUsers(page);
+      if (response.status && response.data) {
+        setUsers(response.data.users);
+        setPagination({
+          currentPage: response.data.current_page,
+          totalPages: response.data.total_pages,
+          totalUsers: response.data.total_users
+        });
+      }
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCountries = async () => {
+    try {
+      const response = await locationService.getCountries();
+      if (response.status) {
+        setCountries(response.data);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch countries');
+    }
+  };
+
+  const fetchStates = async (country) => {
+    try {
+      const response = await locationService.getStates(country);
+      if (response.status) {
+        setStates(response.data);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch states');
+    }
+  };
+
+  const fetchCities = async (country, state) => {
+    try {
+      const response = await locationService.getCities(country, state);
+      if (response.status) {
+        setCities(response.data);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch cities');
+    }
+  };
+
+  const fetchInterests = async () => {
+    try {
+      const response = await interestService.getAllInterests();
+      if (response.status) {
+        setInterests(response.interests);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch interests');
+    }
+  };
+
+  const handleOpenModal = async (user = null) => {
     if (user) {
-      setFormData({
-        name: user.name,
-        email: user.email,
-        status: user.status,
-        location: user.location,
-        age: user.age,
-        gender: user.gender,
-      });
-      setSelectedUser(user);
+      try {
+        const response = await userService.getUserById(user.id);
+        if (response.status && response.data) {
+          const userData = response.data;
+          setFormData({
+            ...userData,
+            password: '' // Don't show password in edit mode
+          });
+          setSelectedUser(userData);
+        }
+      } catch (error) {
+        toast.error('Failed to fetch user details');
+        return;
+      }
     } else {
       setFormData(initialFormData);
       setSelectedUser(null);
     }
-    setIsUserModalOpen(true);
+    setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try {
+      if (selectedUser) {
+        const response = await userService.updateUser(selectedUser.id, formData);
+        if (response.status) {
+          toast.success('User updated successfully');
+          await fetchUsers(pagination.currentPage);
+        }
+      } else {
+        const response = await userService.createUser(formData);
+        if (response.status) {
+          toast.success('User created successfully');
+          await fetchUsers(pagination.currentPage);
+        }
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async () => {
     if (selectedUser) {
-      setUsers(users.map(user => 
-        user.id === selectedUser.id 
-          ? { ...user, ...formData }
-          : user
-      ));
-    } else {
-      const newUser = {
-        id: String(users.length + 1),
-        ...formData,
-        avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop',
-        premium: false,
-        joinedAt: new Date().toISOString(),
-        lastActive: new Date().toISOString(),
-        bio: '',
-        interests: [],
-        matches: 0,
-        reportCount: 0,
-      };
-      setUsers([...users, newUser]);
-    }
-    setIsUserModalOpen(false);
-  };
-
-  const handleDelete = () => {
-    if (selectedUser) {
-      setUsers(users.filter(user => user.id !== selectedUser.id));
-      setIsDeleteModalOpen(false);
-      setSelectedUser(null);
+      try {
+        const response = await userService.deleteUser(selectedUser.id);
+        if (response.status) {
+          toast.success('User deleted successfully');
+          await fetchUsers(pagination.currentPage);
+          setIsDeleteModalOpen(false);
+          setSelectedUser(null);
+        }
+      } catch (error) {
+        toast.error(error.message);
+      }
     }
   };
 
-  const applyFilters = (user) => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterOptions.status === 'all' || user.status === filterOptions.status;
-    const matchesPremium = filterOptions.premium === 'all' ||
-                          (filterOptions.premium === 'premium' && user.premium) ||
-                          (filterOptions.premium === 'free' && !user.premium);
-    const matchesAge = filterOptions.age === 'all' ||
-                      (filterOptions.age === '18-25' && user.age >= 18 && user.age <= 25) ||
-                      (filterOptions.age === '26-35' && user.age >= 26 && user.age <= 35) ||
-                      (filterOptions.age === '36+' && user.age >= 36);
-    const matchesGender = filterOptions.gender === 'all' || user.gender === filterOptions.gender;
-    const matchesLocation = filterOptions.location === 'all' || user.location.state === filterOptions.location;
-    const matchesJoinDate = filterOptions.joinDate === 'all' ||
-                           (filterOptions.joinDate === 'today' && new Date(user.joinedAt).toDateString() === new Date().toDateString()) ||
-                           (filterOptions.joinDate === 'week' && new Date(user.joinedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
-                           (filterOptions.joinDate === 'month' && new Date(user.joinedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-
-    return matchesSearch && matchesStatus && matchesPremium && matchesAge && matchesGender && matchesLocation && matchesJoinDate;
-  };
-
-  const filteredUsers = users.filter(applyFilters);
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'banned':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-yellow-100 text-yellow-800';
+  const handleStatusChange = async (id, status) => {
+    try {
+      const response = await userService.updateUserStatus(id, status);
+      if (response.status) {
+        toast.success('Status updated successfully');
+        await fetchUsers(pagination.currentPage);
+      }
+    } catch (error) {
+      toast.error(error.message);
     }
   };
+
+  const handleCountryChange = async (country) => {
+    setFormData({
+      ...formData,
+      address: {
+        ...formData.address,
+        country,
+        state: '',
+        city: ''
+      }
+    });
+    await fetchStates(country);
+    setCities([]);
+  };
+
+  const handleStateChange = async (state) => {
+    setFormData({
+      ...formData,
+      address: {
+        ...formData.address,
+        state,
+        city: ''
+      }
+    });
+    await fetchCities(formData.address.country, state);
+  };
+
+  const renderSkeleton = () => (
+    <div className="space-y-4">
+      {[1, 2, 3].map((index) => (
+        <div key={index} className="animate-pulse rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div className="flex items-center space-x-4">
+            <div className="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-1/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+            <div className="space-x-2">
+              <div className="inline-block h-6 w-6 rounded bg-gray-200 dark:bg-gray-700"></div>
+              <div className="inline-block h-6 w-6 rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">User Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage and monitor user accounts</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
-          >
-            <Plus className="h-4 w-4" />
-            Add New User
-          </button>
-          <button className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
-            <Download className="h-4 w-4" />
-            Export
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Search users..."
-            className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <p className="mt-1 text-sm text-gray-500">
+            Total Users: {pagination.totalUsers}
+          </p>
         </div>
         <button
-          onClick={() => setIsFilterModalOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+          onClick={() => handleOpenModal()}
+          className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
         >
-          <Filter className="h-4 w-4" />
-          Filters
-          {Object.values(filterOptions).some(value => value !== 'all') && (
-            <span className="ml-1 rounded-full bg-blue-500 px-2 text-xs text-white">
-              {Object.values(filterOptions).filter(value => value !== 'all').length}
-            </span>
-          )}
+          <Plus className="h-4 w-4" />
+          Add New User
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                User
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Location
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Age
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Gender
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Joined Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="whitespace-nowrap px-6 py-4">
-                  <div className="flex items-center">
-                    <img
-                      className="h-10 w-10 rounded-full"
-                      src={user.avatar}
-                      alt={user.name}
-                    />
-                    <div className="ml-4">
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-gray-900 dark:text-white">{user.name}</div>
-                        {user.premium && (
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                        )}
-                        {user.reportCount > 0 && (
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4">
-                  <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                    getStatusColor(user.status)
-                  }`}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {user.location.city}, {user.location.state}
-                  </div>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  {user.age}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  {user.gender}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {formatDate(user.joinedAt)}
-                  </div>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setIsViewModalOpen(true);
-                      }}
-                      className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                      title="View Details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenModal(user)}
-                      className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                      title="Edit User"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setIsDeleteModalOpen(true);
-                      }}
-                      className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
-                      title="Delete User"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-                      title="More Actions"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          placeholder="Search users..."
+          className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
-      {/* Filter Modal */}
-      <Modal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        title="Filter Users"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Status
-            </label>
-            <select
-              value={filterOptions.status}
-              onChange={(e) => setFilterOptions({ ...filterOptions, status: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="banned">Banned</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Subscription
-            </label>
-            <select
-              value={filterOptions.premium}
-              onChange={(e) => setFilterOptions({ ...filterOptions, premium: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            >
-              <option value="all">All Users</option>
-              <option value="premium">Premium Users</option>
-              <option value="free">Free Users</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Age Range
-            </label>
-            <select
-              value={filterOptions.age}
-              onChange={(e) => setFilterOptions({ ...filterOptions, age: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            >
-              <option value="all">All Ages</option>
-              <option value="18-25">18-25</option>
-              <option value="26-35">26-35</option>
-              <option value="36+">36+</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Gender
-            </label>
-            <select
-              value={filterOptions.gender}
-              onChange={(e) => setFilterOptions({ ...filterOptions, gender: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            >
-              <option value="all">All Genders</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Join Date
-            </label>
-            <select
-              value={filterOptions.joinDate}
-              onChange={(e) => setFilterOptions({ ...filterOptions, joinDate: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            >
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-            </select>
-          </div>
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              onClick={() => {
-                setFilterOptions(initialFilterOptions);
-                setIsFilterModalOpen(false);
-              }}
-              className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
-            >
-              Reset
-            </button>
-            <button
-              onClick={() => setIsFilterModalOpen(false)}
-              className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-            >
-              Apply Filters
-            </button>
-          </div>
+      {isLoading ? (
+        renderSkeleton()
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Location
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Category
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td className="whitespace-nowrap px-6 py-4">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700">
+                        {user.profile_image ? (
+                          <img
+                            src={user.profile_image}
+                            alt={user.name}
+                            className="h-full w-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-full w-full p-2 text-gray-500 dark:text-gray-400" />
+                        )}
+                      </div>
+                      <div className="ml-4">
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {user.name || 'N/A'}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {user.address?.city}, {user.address?.state}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4">
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                      {user.category}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.status === 'active'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                      }`}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setIsViewModalOpen(true);
+                        }}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenModal(user)}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(
+                          user.id,
+                          user.status === 'active' ? 'inactive' : 'active'
+                        )}
+                        className={`${user.status === 'active'
+                            ? 'text-red-600 hover:text-red-900'
+                            : 'text-green-600 hover:text-green-900'
+                          }`}
+                      >
+                        {user.status === 'active' ? (
+                          <Ban className="h-4 w-4" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </Modal>
+      )}
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Page {pagination.currentPage} of {pagination.totalPages}
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => fetchUsers(pagination.currentPage - 1)}
+            disabled={pagination.currentPage === 1}
+            className="rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => fetchUsers(pagination.currentPage + 1)}
+            disabled={pagination.currentPage === pagination.totalPages}
+            className="rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+          >
+            Next
+          </button>
+        </div>
+      </div>
 
       {/* View User Modal */}
       <Modal
@@ -450,124 +419,200 @@ export function Users() {
       >
         {selectedUser && (
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <img
-                src={selectedUser.avatar}
-                alt={selectedUser.name}
-                className="h-20 w-20 rounded-full"
-              />
-              <div>
-                <h3 className="text-xl font-semibold">{selectedUser.name}</h3>
+            {/* Cover Image */}
+            <div className="relative h-48 w-full overflow-hidden rounded-t-lg">
+              {selectedUser.cover_image ? (
+                <img
+                  src={selectedUser.cover_image}
+                  alt="Cover"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-700">
+                  <Upload className="h-8 w-8 text-gray-400" />
+                </div>
+              )}
+            </div>
+
+            {/* Profile Section */}
+            <div className="relative px-6">
+              <div className="absolute -top-16 left-6">
+                <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white dark:border-gray-800">
+                  {selectedUser.profile_image ? (
+                    <img
+                      src={selectedUser.profile_image}
+                      alt={selectedUser.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-700">
+                      <User className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="ml-40">
+                <h2 className="text-2xl font-bold">{selectedUser.name || 'N/A'}</h2>
                 <p className="text-gray-500">{selectedUser.email}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className="text-sm text-gray-500">Status</p>
-                <span className={`inline-flex rounded-full px-2 py-1 text-sm font-semibold ${
-                  getStatusColor(selectedUser.status)
-                }`}>
-                  {selectedUser.status}
-                </span>
+            {/* User Information */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-4">
+                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <h3 className="mb-3 font-semibold">Basic Information</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Mobile</span>
+                      <span>{selectedUser.mobile || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Age</span>
+                      <span>{selectedUser.age || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Gender</span>
+                      <span>{selectedUser.i_am || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Interested In</span>
+                      <span>{selectedUser.interested_in || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <h3 className="mb-3 font-semibold">Physical Attributes</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Height</span>
+                      <span>{selectedUser.height ? `${selectedUser.height} cm` : 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Weight</span>
+                      <span>{selectedUser.weight ? `${selectedUser.weight} kg` : 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Skin Color</span>
+                      <span>{selectedUser.skin_color || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-500">Subscription</p>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold">
-                  {selectedUser.premium ? (
-                    <>
-                      <Crown className="h-4 w-4 text-yellow-500" />
-                      Premium
-                    </>
-                  ) : (
-                    'Free'
-                  )}
-                </span>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-500">Location</p>
-                <p className="flex items-center gap-1 text-sm">
-                  <MapPin className="h-4 w-4" />
-                  {selectedUser.location.city}, {selectedUser.location.state}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-500">Joined Date</p>
-                <p className="flex items-center gap-1 text-sm">
-                  <Calendar className="h-4 w-4" />
-                  {formatDate(selectedUser.joinedAt)}
-                </p>
+
+              <div className="space-y-4">
+                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <h3 className="mb-3 font-semibold">Location</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Country</span>
+                      <span>{selectedUser.address?.country || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">State</span>
+                      <span>{selectedUser.address?.state || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">City</span>
+                      <span>{selectedUser.address?.city || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Pincode</span>
+                      <span>{selectedUser.address?.pincode || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <h3 className="mb-3 font-semibold">Additional Information</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Marital Status</span>
+                      <span>{selectedUser.marital_status || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Category</span>
+                      <span>{selectedUser.category || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Status</span>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${selectedUser.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                        }`}>
+                        {selectedUser.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-gray-500">Bio</p>
-              <p className="text-sm">{selectedUser.bio}</p>
+            <div className="space-y-4">
+              <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                <h3 className="mb-3 font-semibold">About</h3>
+                <p className="text-gray-600 dark:text-gray-300">{selectedUser.about || 'No description available.'}</p>
+              </div>
+
+              <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                <h3 className="mb-3 font-semibold">Interests & Hobbies</h3>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="mb-2 text-sm font-medium text-gray-500">Interests</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUser.interests?.length > 0 ? (
+                        selectedUser.interests.map((interest, index) => (
+                          <span
+                            key={index}
+                            className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
+                          >
+                            {interest}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-500">No interests added</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 text-sm font-medium text-gray-500">Hobbies</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUser.hobbies?.length > 0 ? (
+                        selectedUser.hobbies.map((hobby, index) => (
+                          <span
+                            key={index}
+                            className="rounded-full bg-green-100 px-3 py-1 text-sm text-green-800"
+                          >
+                            {hobby}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-500">No hobbies added</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-gray-500">Interests</p>
-              <div className="flex flex-wrap gap-2">
-                {selectedUser.interests.map((interest, index) => (
-                  <span
-                    key={index}
-                    className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                  >
-                    {interest}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-lg border border-gray-200 p-4 text-center dark:border-gray-700">
-                <p className="text-2xl font-bold text-blue-600">{selectedUser.matches}</p>
-                <p className="text-sm text-gray-500">Matches</p>
-              </div>
-              <div className="rounded-lg border border-gray-200 p-4 text-center dark:border-gray-700">
-                <p className="text-2xl font-bold text-red-600">{selectedUser.reportCount}</p>
-                <p className="text-sm text-gray-500">Reports</p>
-              </div>
-              <div className="rounded-lg border border-gray-200 p-4 text-center dark:border-gray-700">
-                <p className="text-2xl font-bold text-green-600">
-                  {new Date(selectedUser.lastActive).toLocaleDateString()}
-                </p>
-                <p className="text-sm text-gray-500">Last Active</p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end space-x-3">
               <button
                 onClick={() => {
                   setIsViewModalOpen(false);
                   handleOpenModal(selectedUser);
                 }}
-                className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-blue-600 transition-colors hover:bg-blue-50 dark:border-gray-700 dark:hover:bg-blue-900/20"
+                className="rounded-lg border border-gray-200 px-4 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
               >
-                <Edit className="h-4 w-4" />
-                Edit
+                Edit Profile
               </button>
               <button
-                className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                onClick={() => setIsViewModalOpen(false)}
+                className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
               >
-                <MessageSquare className="h-4 w-4" />
-                Message
+                Close
               </button>
-              {selectedUser.status === 'active' ? (
-                <button
-                  className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-red-600 transition-colors hover:bg-red-50 dark:border-red-700 dark:hover:bg-red-900/20"
-                >
-                  <Ban className="h-4 w-4" />
-                  Ban User
-                </button>
-              ) : (
-                <button
-                  className="flex items-center gap-2 rounded-lg border border-green-200 px-4 py-2 text-green-600 transition-colors hover:bg-green-50 dark:border-green-700 dark:hover:bg-green-900/20"
-                >
-                  <Shield className="h-4 w-4" />
-                  Activate User
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -575,88 +620,156 @@ export function Users() {
 
       {/* Add/Edit User Modal */}
       <Modal
-        isOpen={isUserModalOpen}
-        onClose={() => setIsUserModalOpen(false)}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         title={selectedUser ? 'Edit User' : 'Add New User'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Cover Image Upload */}
+          <div className="relative h-48 w-full overflow-hidden rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+            {formData.cover_image ? (
+              <>
+                <img
+                  src={typeof formData.cover_image === 'string' ? formData.cover_image : URL.createObjectURL(formData.cover_image)}
+                  alt="Cover"
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, cover_image: null })}
+                  className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
+              <label className="flex h-full w-full cursor-pointer items-center justify-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData({ ...formData, cover_image: file });
+                    }
+                  }}
+                />
+                <div className="text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <p className="mt-2 text-sm text-gray-500">Click to upload cover image</p>
+                </div>
+              </label>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
+
+          {/* Profile Image Upload */}
+          <div className="relative mx-auto h-32 w-32">
+            <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white dark:border-gray-800">
+              {formData.profile_image ? (
+                <img
+                  src={typeof formData.profile_image === 'string' ? formData.profile_image : URL.createObjectURL(formData.profile_image)}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-700">
+                  <User className="h-12 w-12 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <label className="absolute bottom-0 right-0 cursor-pointer rounded-full bg-blue-500 p-2 text-white hover:bg-blue-600">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setFormData({ ...formData, profile_image: file });
+                  }
+                }}
+              />
+              <Camera className="h-4 w-4" />
             </label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-            />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                City
+                Name
               </label>
               <input
                 type="text"
-                required
-                value={formData.location.city}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  location: { ...formData.location, city: e.target.value }
-                })}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                State
+                Email
               </label>
               <input
-                type="text"
+                type="email"
                 required
-                value={formData.location.state}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  location: { ...formData.location, state: e.target.value }
-                })}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               />
             </div>
           </div>
+
+          {!selectedUser && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Password
+              </label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Mobile
+              </label>
+              <input
+                type="tel"
+                value={formData.mobile}
+                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+
                 Age
               </label>
               <input
                 type="number"
-                required
                 min="18"
                 value={formData.age}
                 onChange={(e) => setFormData({ ...formData, age: Number(e.target.value) })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Gender
+                I am
               </label>
               <select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                value={formData.i_am}
+                onChange={(e) => setFormData({ ...formData, i_am: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               >
                 <option value="Male">Male</option>
@@ -664,28 +777,197 @@ export function Users() {
                 <option value="Other">Other</option>
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Interested In
+              </label>
+              <select
+                value={formData.interested_in}
+                onChange={(e) => setFormData({ ...formData, interested_in: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Both">Both</option>
+              </select>
+            </div>
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Status
+              About
+            </label>
+            <textarea
+              value={formData.about}
+              onChange={(e) => setFormData({ ...formData, about: e.target.value })}
+              rows={3}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Country
+              </label>
+              <select
+                value={formData.address.country}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              >
+                <option value="">Select Country</option>
+                {countries.map((country) => (
+                  <option key={country.iso2} value={country.name}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                State
+              </label>
+              <select
+                value={formData.address.state}
+                onChange={(e) => handleStateChange(e.target.value)}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                disabled={!formData.address.country}
+              >
+                <option value="">Select State</option>
+                {states.map((state) => (
+                  <option key={state.state_code} value={state.name}>
+                    {state.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                City
+              </label>
+              <select
+                value={formData.address.city}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  address: { ...formData.address, city: e.target.value }
+                })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+                disabled={!formData.address.state}
+              >
+                <option value="">Select City</option>
+                {cities.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Pincode
+              </label>
+              <input
+                type="text"
+                value={formData.address.pincode}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  address: { ...formData.address, pincode: e.target.value }
+                })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Locality
+              </label>
+              <input
+                type="text"
+                value={formData.address.locality}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  address: { ...formData.address, locality: e.target.value }
+                })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Height (cm)
+              </label>
+              <input
+                type="number"
+                value={formData.height}
+                onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Weight (kg)
+              </label>
+              <input
+                type="number"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Skin Color
+              </label>
+              <input
+                type="text"
+                value={formData.skin_color}
+                onChange={(e) => setFormData({ ...formData, skin_color: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Marital Status
+              </label>
+              <select
+                value={formData.marital_status}
+                onChange={(e) => setFormData({ ...formData, marital_status: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+              >
+                <option value="unmarried">Unmarried</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
+                <option value="widowed">Widowed</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Category
             </label>
             <select
-              value={formData.status}
-              onChange={(e) => setFormData({
-                ...formData,
-                status: e.target.value
-              })}
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             >
-              <option value="active">Active</option>
-              <option value="banned">Banned</option>
-              <option value="pending">Pending</option>
+              <option value="Serious Relationship">Serious Relationship</option>
+              <option value="Casual Dating">Casual Dating</option>
+              <option value="Friendship">Friendship</option>
             </select>
           </div>
+
           <div className="mt-6 flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setIsUserModalOpen(false)}
+              onClick={() => setIsModalOpen(false)}
               className="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
             >
               Cancel
