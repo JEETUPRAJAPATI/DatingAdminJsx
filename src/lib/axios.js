@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 import { toast } from 'react-hot-toast';
 
 const api = axios.create({
-  baseURL: 'https://datingadminapi.onrender.com',
+  baseURL: 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -36,7 +36,7 @@ api.interceptors.response.use(
 
     if (error.response.status === 401) {
       Cookies.remove('adminToken');
-      toast.error('Session expired. Please login again.');
+      // toast.error('Invalid email or password.');
     } else if (error.response.status === 403) {
       toast.error('You do not have permission to perform this action.');
     } else if (error.response.status === 404) {

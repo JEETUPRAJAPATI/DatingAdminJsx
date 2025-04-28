@@ -28,7 +28,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'User Management', href: '/users', icon: Users },
   { name: 'Admin Management', href: '/admins', icon: UserCog },
-  { name: 'Chat Management', href: '/chats', icon: MessageSquare },
+  // { name: 'Chat Management', href: '/chats', icon: MessageSquare },
   { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
   { name: 'Payments', href: '/payments', icon: History },
   { name: 'Questions & Quiz', href: '/questions', icon: BrainCircuit },

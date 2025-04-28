@@ -60,8 +60,10 @@ export function Payments() {
   const handleEdit = async (e) => {
     e.preventDefault();
     try {
+      console.log('selectedPayment', selectedPayment)
       if (selectedPayment) {
-        const response = await paymentService.updatePayment(selectedPayment.id, formData);
+
+        const response = await paymentService.updatePayment(selectedPayment._id, formData);
         if (response.status) {
           toast.success('Payment updated successfully');
           await fetchPayments();
@@ -76,7 +78,7 @@ export function Payments() {
   const handleDelete = async () => {
     try {
       if (selectedPayment) {
-        const response = await paymentService.deletePayment(selectedPayment.id);
+        const response = await paymentService.deletePayment(selectedPayment._id);
         if (response.status) {
           toast.success('Payment deleted successfully');
           await fetchPayments();
@@ -90,21 +92,26 @@ export function Payments() {
   };
 
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = payment.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.transaction_id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (payment.user_id?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+
     const matchesDateRange = filterData.dateRange === 'all' ||
       (filterData.dateRange === 'today' && new Date(payment.created_at).toDateString() === new Date().toDateString()) ||
       (filterData.dateRange === 'week' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
       (filterData.dateRange === 'month' && new Date(payment.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+
     const matchesAmountRange = filterData.amountRange === 'all' ||
       (filterData.amountRange === 'under50' && payment.amount < 50) ||
       (filterData.amountRange === '50to100' && payment.amount >= 50 && payment.amount <= 100) ||
       (filterData.amountRange === 'over100' && payment.amount > 100);
+
     const matchesPaymentMethod = filterData.paymentMethod === 'all' || payment.payment_method === filterData.paymentMethod;
 
     return matchesSearch && matchesStatus && matchesDateRange && matchesAmountRange && matchesPaymentMethod;
   });
+
 
   const renderSkeleton = () => (
     <div className="space-y-4">
@@ -288,23 +295,24 @@ export function Payments() {
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
               {filteredPayments.map((payment) => (
-                <tr key={payment.id}>
+                <tr key={payment._id}>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                     {payment.transaction_id}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    {payment.user_name}
+                    {payment.user_id?.name}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
                     {formatCurrency(payment.amount)}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4">
                     <span
-                      className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${payment.status === 'completed'
-                        ? 'bg-green-100 text-green-800'
-                        : payment.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
+                      className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5
+            ${payment.status === 'success'
+                          ? 'bg-green-100 text-green-800'
+                          : payment.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
                         }`}
                     >
                       {payment.status}
@@ -327,7 +335,7 @@ export function Payments() {
                           setFormData({
                             amount: payment.amount,
                             status: payment.status,
-                            plan_name: payment.plan_name
+                            plan_name: payment.plan_id?.name // updated here
                           });
                           setIsEditModalOpen(true);
                         }}
@@ -349,6 +357,7 @@ export function Payments() {
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       )}
@@ -404,7 +413,7 @@ export function Payments() {
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             >
-              <option value="completed">Completed</option>
+              <option value="success">Success</option>
               <option value="pending">Pending</option>
               <option value="failed">Failed</option>
             </select>
@@ -416,6 +425,7 @@ export function Payments() {
             <input
               type="text"
               value={formData.plan_name}
+              disabled
               onChange={(e) => setFormData({ ...formData, plan_name: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
             />
