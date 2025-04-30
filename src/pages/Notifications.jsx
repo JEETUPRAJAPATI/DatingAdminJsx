@@ -23,7 +23,7 @@ export function Notifications() {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const response = await notificationService.getAllNotifications();
+      const response = await notificationService.getAllNotifications(pagination.currentPage); // pass page number here
       if (response.status) {
         setNotifications(response.notifications);
         setPagination({

@@ -55,3 +55,12 @@ export const updateUserStatus = async (id, status) => {
         throw new Error(error.response?.data?.message || 'Failed to update user status');
     }
 };
+
+export const banUser = async (id, { reason, duration }) => {
+    try {
+        const response = await api.put(`${BASE_URL}/${id}/ban`, { reason, duration });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to ban user');
+    }
+};

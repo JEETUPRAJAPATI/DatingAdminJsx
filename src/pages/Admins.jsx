@@ -5,13 +5,13 @@ import { toast } from 'react-hot-toast';
 import * as adminService from '../services/admin';
 
 const allPermissions = [
+  'Dashboard',
   'Users',
   'Admins',
   'Content',
   'Settings',
   'Reports',
   'Payments',
-  'Chats',
   'Subscriptions',
   'Questions',
   'Notifications',
@@ -90,6 +90,7 @@ export function Admins() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log('formdata', formData)
       if (selectedAdmin) {
         const response = await adminService.updateAdmin(selectedAdmin.id, formData);
         if (response.status) {
@@ -334,36 +335,37 @@ export function Admins() {
               <option value="admin">Admin</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Permissions
-            </label>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {allPermissions.map((permission) => (
-                <label key={permission} className="flex items-center">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Permissions
+          </label>
+          <div className="mt-2 grid grid-cols-2 gap-2">
 
-                  <input
-                    type="checkbox"
-                    checked={formData.permissions?.[permission.toLowerCase()] || false}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        permissions: {
-                          ...formData.permissions,
-                          [permission.toLowerCase()]: e.target.checked,
-                        },
-                      });
-                    }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
+            {allPermissions.map((permission) => (
+              <label key={permission} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.permissions?.[permission.toLowerCase()] || false}
+                  onChange={(e) => {
+                    const updatedPermissions = {
+                      ...formData.permissions,
+                      [permission.toLowerCase()]: e.target.checked,
+                    };
 
-                  <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">
-                    {permission}
-                  </span>
-                </label>
-              ))}
-            </div>
+                    // Only update if the permission is not already in the object (avoiding duplicates)
+                    setFormData({
+                      ...formData,
+                      permissions: updatedPermissions,
+                    });
+                  }}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">
+                  {permission}
+                </span>
+              </label>
+            ))}
           </div>
+
           <div className="mt-6 flex justify-end gap-2">
             <button
               type="button"

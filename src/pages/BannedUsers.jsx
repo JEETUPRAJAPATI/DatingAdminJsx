@@ -27,8 +27,9 @@ export function BannedUsers() {
     try {
       setIsLoading(true);
       const response = await bannedUserService.getBannedUsers(pagination.currentPage);
-      if (response.status && response.banned_users) {
-        setBannedUsers(response.banned_users);
+      console.log('response', response.data.banned_users);
+      if (response.status && response.data.banned_users) {
+        setBannedUsers(response.data.banned_users);
         setPagination({
           currentPage: response.current_page,
           totalPages: response.total_pages,
@@ -44,8 +45,9 @@ export function BannedUsers() {
 
   const handleUnban = async () => {
     try {
+      console.log('selectedUser', selectedUser)
       if (selectedUser && unbanReason.trim()) {
-        const response = await bannedUserService.unbanUser(selectedUser._id, unbanReason);
+        const response = await bannedUserService.unbanUser(selectedUser.user?._id, unbanReason);
         if (response.status) {
           toast.success('User unbanned successfully');
           await fetchBannedUsers();

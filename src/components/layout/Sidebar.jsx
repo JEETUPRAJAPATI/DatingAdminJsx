@@ -23,33 +23,39 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'User Management', href: '/users', icon: Users },
-  { name: 'Admin Management', href: '/admins', icon: UserCog },
-  // { name: 'Chat Management', href: '/chats', icon: MessageSquare },
-  { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
-  { name: 'Payments', href: '/payments', icon: History },
-  { name: 'Questions & Quiz', href: '/questions', icon: BrainCircuit },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Reported Users', href: '/reported', icon: UserX },
-  { name: 'Banned Users', href: '/banned', icon: UserMinus },
-  { name: 'Interests', href: '/interests', icon: Tags },
-  { name: 'Theme & Settings', href: '/settings', icon: Palette },
-  { name: 'Verifications', href: '/verifications', icon: FileCheck },
-  { name: 'Activity Logs', href: '/logs', icon: Activity },
-  { name: 'Email Templates', href: '/email-templates', icon: Mail },
-  { name: 'Support', href: '/support', icon: HelpCircle },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: 'dashboard' },
+  { name: 'User Management', href: '/users', icon: Users, permission: 'users' },
+  { name: 'Admin Management', href: '/admins', icon: UserCog, permission: 'admins' },
+  // { name: 'Chat Management', href: '/chats', icon: MessageSquare, permission: 'chats' },
+  { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard, permission: 'subscriptions' },
+  { name: 'Payments', href: '/payments', icon: History, permission: 'payments' },
+  { name: 'Questions & Quiz', href: '/questions', icon: BrainCircuit, permission: 'questions' },
+  { name: 'Notifications', href: '/notifications', icon: Bell, permission: 'notifications' },
+  { name: 'Reported Users', href: '/reported', icon: UserX, permission: 'reported' },
+  { name: 'Banned Users', href: '/banned', icon: UserMinus, permission: 'banned' },
+  { name: 'Interests', href: '/interests', icon: Tags, permission: 'interests' },
+  { name: 'Theme & Settings', href: '/settings', icon: Palette, permission: 'settings' },
+  { name: 'Verifications', href: '/verifications', icon: FileCheck, permission: 'verifications' },
+  { name: 'Activity Logs', href: '/logs', icon: Activity, permission: 'logs' },
+  { name: 'Email Templates', href: '/email-templates', icon: Mail, permission: 'emailtemplates' },
+  { name: 'Support', href: '/support', icon: HelpCircle, permission: 'support' },
 ];
 
 export function Sidebar({ onClose, collapsed, onCollapse }) {
   const navigate = useNavigate();
+  const hasPermission = useAuthStore((state) => state.hasPermission);
+  const logout = useAuthStore((state) => state.logout);
 
   const handleLogout = () => {
-    // Here you would handle logout logic like clearing tokens, etc
+    logout();
     navigate('/login');
   };
+
+  // Filter navigation items based on permissions
+  const authorizedNavigation = navigation.filter(item => hasPermission(item.permission));
 
   return (
     <div className="flex h-full flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-gray-800 dark:bg-gray-900">
@@ -82,7 +88,7 @@ export function Sidebar({ onClose, collapsed, onCollapse }) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
-        {navigation.map((item) => (
+        {authorizedNavigation.map((item) => (
           <NavLink
             key={item.name}
             to={item.href}

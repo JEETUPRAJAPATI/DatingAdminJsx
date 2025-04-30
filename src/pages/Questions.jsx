@@ -86,6 +86,7 @@ export function Questions() {
         })),
         required: questionForm.required ? "true" : "false",
       };
+      console.log('cleanedQuestionForm', cleanedQuestionForm)
       if (selectedQuestion) {
         const response = await quizService.updateQuestion(selectedQuestion.id, cleanedQuestionForm);
         if (response.status) {
@@ -532,15 +533,15 @@ export function Questions() {
                       className="block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                       placeholder={`Option ${index + 1}`}
                     />
-                    {questionForm.options.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => removeOption(index)}
-                        className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => removeOption(index)}
+                      className="rounded-lg p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+
                   </div>
                 ))}
                 <button

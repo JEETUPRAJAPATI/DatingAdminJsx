@@ -2,9 +2,9 @@ import api from '../lib/axios';
 
 const BASE_URL = '/api/admin/notifications';
 
-export const getAllNotifications = async () => {
+export const getAllNotifications = async (page = 1, perPage = 10) => {
     try {
-        const response = await api.get(BASE_URL);
+        const response = await api.get(`${BASE_URL}?page=${page}&per_page=${perPage}`);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to fetch notifications');

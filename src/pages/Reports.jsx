@@ -23,8 +23,9 @@ export function Reports() {
     try {
       setIsLoading(true);
       const response = await reportService.getAllReports(pagination.currentPage);
+      console.log('report list is ', response.data.reports)
       if (response.status) {
-        setReports(response.reports);
+        setReports(response.data.reports);
         setPagination({
           currentPage: response.current_page,
           totalPages: response.total_pages,

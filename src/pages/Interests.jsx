@@ -119,7 +119,9 @@ export function Interests() {
 
   const filteredInterests = interests.filter(interest => {
     const matchesSearch = interest.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || interest.category.id === categoryFilter;
+    console.log('interest.category?._id', interest.category?.id);
+    console.log('categoryFilter', categoryFilter)
+    const matchesCategory = categoryFilter === 'all' || interest.category?.id === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 

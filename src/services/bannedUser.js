@@ -1,6 +1,6 @@
 import api from '../lib/axios';
 
-const BASE_URL = '/api/admin/users/banned';
+const BASE_URL = '/api/admin/users/banned/list';
 
 export const getBannedUsers = async (page = 1, perPage = 10) => {
     try {

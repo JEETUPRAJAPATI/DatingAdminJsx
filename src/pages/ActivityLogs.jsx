@@ -33,9 +33,9 @@ export function ActivityLogs() {
         perPage: 10,
         ...filterData
       });
-
+      console.log('data is', response);
       if (response.status) {
-        setLogs(response.logs);
+        setLogs(response.data?.logs);
         setPagination({
           currentPage: response.current_page,
           totalPages: response.total_pages,

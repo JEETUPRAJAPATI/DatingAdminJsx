@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { User, Search, Filter, Edit, Trash2, Eye, Plus, Ban, CheckCircle, Camera, Upload, X } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { toast } from 'react-hot-toast';
@@ -53,12 +54,31 @@ export function Users() {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [interests, setInterests] = useState([]);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedUserStatus, setSelectedUserStatus] = useState({
+    id: null,
+    currentStatus: '',
+    newStatus: '',
+    reason: '',
+    duration: '',
+  });
+  const openStatusModal = (user) => {
+    setSelectedUserStatus({
+      id: user.id,
+      currentStatus: user.status,
+      newStatus: user.status,
+      reason: user.reason || '',
+      duration: user.duration || '',
+    });
+    setStatusModalOpen(true);
+  };
 
   useEffect(() => {
     fetchUsers();
     fetchCountries();
     fetchInterests();
   }, []);
+
 
   const fetchUsers = async (page = 1) => {
     try {
@@ -115,6 +135,7 @@ export function Users() {
   const fetchInterests = async () => {
     try {
       const response = await interestService.getAllInterests();
+      console.log('response', response.interests)
       if (response.status) {
         setInterests(response.interests);
       }
@@ -123,16 +144,27 @@ export function Users() {
     }
   };
 
+  const interestOptions = interests.map((interest) => ({
+    value: interest.id,
+    label: interest.name,
+    data: interest, // save full object here
+  }));
   const handleOpenModal = async (user = null) => {
     if (user) {
       try {
         const response = await userService.getUserById(user.id);
         if (response.status && response.data) {
           const userData = response.data;
+          const matchedInterests = (userData.interests || []).map((id) => {
+            const match = interestOptions.find(opt => opt.value === id);
+            return match ? match.data : null;
+          }).filter(item => item !== null);
+
           setFormData({
             ...userData,
-            password: '' // Don't show password in edit mode
+            interests: matchedInterests
           });
+
           setSelectedUser(userData);
         }
       } catch (error) {
@@ -148,15 +180,21 @@ export function Users() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const processedFormData = {
+      ...formData,
+      interests: formData.interests.map((interest) => interest.id), // Extract only the IDs
+    };
     try {
+
+      console.log('Processed formData', processedFormData);
       if (selectedUser) {
-        const response = await userService.updateUser(selectedUser.id, formData);
+        const response = await userService.updateUser(selectedUser.id, processedFormData);
         if (response.status) {
           toast.success('User updated successfully');
           await fetchUsers(pagination.currentPage);
         }
       } else {
-        const response = await userService.createUser(formData);
+        const response = await userService.createUser(processedFormData);
         if (response.status) {
           toast.success('User created successfully');
           await fetchUsers(pagination.currentPage);
@@ -195,6 +233,28 @@ export function Users() {
       toast.error(error.message);
     }
   };
+
+  const submitStatusChange = async () => {
+    const { id, newStatus, reason, duration } = selectedUserStatus;
+
+    try {
+      const payload =
+        newStatus === 'banned'
+          ? { status: newStatus, reason, duration }
+          : { status: newStatus };
+
+      const response = await userService.banUser(id, payload);
+
+      if (response.status) {
+        toast.success('Status updated successfully');
+        setStatusModalOpen(false);
+        await fetchUsers(pagination.currentPage);
+      }
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
 
   const handleCountryChange = async (country) => {
     setFormData({
@@ -330,13 +390,22 @@ export function Users() {
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.status === 'active'
+                    <span
+                      onClick={() => handleStatusChange(
+                        user.id,
+                        user.status === 'active' ? 'inactive' : 'active'
+                      )}
+                      className={`cursor-pointer inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.status === 'active'
                         ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                      }`}>
+                        : user.status === 'inactive'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                    >
                       {user.status}
                     </span>
                   </td>
+
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
                     <div className="flex space-x-3">
                       <button
@@ -364,13 +433,10 @@ export function Users() {
                         <Trash2 className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleStatusChange(
-                          user.id,
-                          user.status === 'active' ? 'inactive' : 'active'
-                        )}
+                        onClick={() => openStatusModal(user)}
                         className={`${user.status === 'active'
-                            ? 'text-red-600 hover:text-red-900'
-                            : 'text-green-600 hover:text-green-900'
+                          ? 'text-red-600 hover:text-red-900'
+                          : 'text-green-600 hover:text-green-900'
                           }`}
                       >
                         {user.status === 'active' ? (
@@ -539,8 +605,8 @@ export function Users() {
                     <div className="flex justify-between">
                       <span className="text-gray-500">Status</span>
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${selectedUser.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                         }`}>
                         {selectedUser.status}
                       </span>
@@ -720,20 +786,31 @@ export function Users() {
             </div>
           </div>
 
-          {!selectedUser && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2"> {/* Make it span full width */}
+              <h4 className="mb-2 text-sm font-medium text-gray-500">Interests</h4>
+              <Select
+                options={interestOptions}
+                isMulti
+                value={formData.interests.map((selectedInterest) => ({
+                  value: selectedInterest.id,
+                  label: selectedInterest.name,
+                  data: selectedInterest,
+                }))}
+                onChange={(selectedOptions) => {
+                  const selectedInterests = selectedOptions.map((opt) => opt.data);
+                  setFormData((prev) => ({
+                    ...prev,
+                    interests: selectedInterests,
+                  }));
+                }}
+                placeholder="Select Interests"
+                className="w-full" // Force full width
+                classNamePrefix="select"
               />
             </div>
-          )}
+          </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -806,61 +883,65 @@ export function Users() {
           </div>
 
           <div className="grid grid-cols-3 gap-4">
+            {/* Country */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Country
               </label>
-              <select
-                value={formData.address.country}
-                onChange={(e) => handleCountryChange(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-              >
-                <option value="">Select Country</option>
-                {countries.map((country) => (
-                  <option key={country.iso2} value={country.name}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={countries.map((country) => ({
+                  value: country.name,
+                  label: country.name,
+                }))}
+                value={formData.address?.country ? { value: formData.address?.country, label: formData.address?.country } : null}
+                onChange={(selectedOption) => handleCountryChange(selectedOption?.value)}
+                placeholder="Select Country"
+                isSearchable={true}
+                className="mt-1"
+                isClearable
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 State
               </label>
-              <select
-                value={formData.address.state}
-                onChange={(e) => handleStateChange(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-                disabled={!formData.address.country}
-              >
-                <option value="">Select State</option>
-                {states.map((state) => (
-                  <option key={state.state_code} value={state.name}>
-                    {state.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={states.map((state) => ({
+                  value: state.name,
+                  label: state.name,
+                }))}
+                value={formData.address?.state ? { value: formData.address?.state, label: formData.address?.state } : null}
+                onChange={(selectedOption) => handleStateChange(selectedOption?.value)}
+                placeholder="Select State"
+                className="mt-1"
+                isClearable
+                isSearchable={true}
+                isDisabled={!formData.address?.country}
+              />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 City
               </label>
-              <select
-                value={formData.address.city}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  address: { ...formData.address, city: e.target.value }
-                })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-                disabled={!formData.address.state}
-              >
-                <option value="">Select City</option>
-                {cities.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={cities.map((city) => ({
+                  value: city,
+                  label: city,
+                }))}
+                value={formData.address?.city ? { value: formData.address?.city, label: formData.address?.city } : null}
+                onChange={(selectedOption) =>
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, city: selectedOption?.value },
+                  })
+                }
+                placeholder="Select City"
+                className="mt-1"
+                isClearable
+                isSearchable={true}
+                isDisabled={!formData.address?.state}
+              />
             </div>
           </div>
 
@@ -871,7 +952,7 @@ export function Users() {
               </label>
               <input
                 type="text"
-                value={formData.address.pincode}
+                value={formData.address?.pincode}
                 onChange={(e) => setFormData({
                   ...formData,
                   address: { ...formData.address, pincode: e.target.value }
@@ -885,7 +966,7 @@ export function Users() {
               </label>
               <input
                 type="text"
-                value={formData.address.locality}
+                value={formData.address?.locality}
                 onChange={(e) => setFormData({
                   ...formData,
                   address: { ...formData.address, locality: e.target.value }
@@ -981,6 +1062,75 @@ export function Users() {
           </div>
         </form>
       </Modal>
+
+
+
+      {statusModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-lg font-semibold mb-4">Change User Status</h2>
+
+            <select
+              className="w-full mb-4 border p-2 rounded"
+              value={selectedUserStatus.newStatus}
+              onChange={(e) =>
+                setSelectedUserStatus((prev) => ({
+                  ...prev,
+                  newStatus: e.target.value,
+                }))
+              }
+            >
+              <option value="">select</option>
+              <option value="banned">Banned</option>
+            </select>
+
+            {selectedUserStatus.newStatus === 'banned' && (
+              <>
+                <input
+                  type="text"
+                  className="w-full mb-2 border p-2 rounded"
+                  placeholder="Ban Reason"
+                  value={selectedUserStatus.reason}
+                  onChange={(e) =>
+                    setSelectedUserStatus((prev) => ({
+                      ...prev,
+                      reason: e.target.value,
+                    }))
+                  }
+                />
+
+                <input
+                  type="number"
+                  className="w-full mb-4 border p-2 rounded"
+                  placeholder="Duration (days)"
+                  value={selectedUserStatus.duration}
+                  onChange={(e) =>
+                    setSelectedUserStatus((prev) => ({
+                      ...prev,
+                      duration: e.target.value,
+                    }))
+                  }
+                />
+              </>
+            )}
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setStatusModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitStatusChange}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete User Modal */}
       <Modal

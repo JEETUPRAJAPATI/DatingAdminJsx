@@ -26,7 +26,12 @@ export const createQuestion = async (data) => {
         const response = await api.post(`${BASE_URL}/questions`, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to create question');
+        let errorMessage = 'Failed to create question';
+        if (error.response?.data?.errors?.length > 0) {
+            errorMessage = error.response.data.errors[0].message;
+        } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+        }
     }
 };
 
@@ -35,7 +40,14 @@ export const updateQuestion = async (id, data) => {
         const response = await api.put(`${BASE_URL}/questions/${id}`, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to update question');
+        let errorMessage = 'Failed to update question';
+        if (error.response?.data?.errors?.length > 0) {
+            errorMessage = error.response.data.errors[0].message;
+        } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+        }
+
+        throw new Error(errorMessage);
     }
 };
 
@@ -44,7 +56,12 @@ export const deleteQuestion = async (id) => {
         const response = await api.delete(`${BASE_URL}/questions/${id}`);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to delete question');
+        let errorMessage = 'Failed to delete question';
+        if (error.response?.data?.errors?.length > 0) {
+            errorMessage = error.response.data.errors[0].message;
+        } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+        }
     }
 };
 
