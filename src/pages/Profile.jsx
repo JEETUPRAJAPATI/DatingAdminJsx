@@ -4,7 +4,7 @@ import { Modal } from '../components/ui/Modal';
 import { toast } from 'react-hot-toast';
 import * as profileService from '../services/profile';
 import { useAuthStore } from '../store/useAuthStore';
-
+import { API_BASE_URL } from '../../src/constants/api.js';
 export function Profile() {
   const { admin, setAdmin, logout } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -140,8 +140,13 @@ export function Profile() {
           <div className="mt-4 flex items-center justify-center">
             <div className="relative">
               <img
-                src={profile.profile_image instanceof File ? URL.createObjectURL(profile.profile_image) :
-                  profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`}
+                src={
+                  profile.profile_image instanceof File
+                    ? URL.createObjectURL(profile.profile_image)
+                    : profile.profile_image
+                      ? `${API_BASE_URL}/${profile.profile_image}`
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`
+                }
                 alt={profile.name}
                 className="h-32 w-32 rounded-full object-cover"
               />

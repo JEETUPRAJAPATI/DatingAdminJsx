@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Plus, Edit, Trash2, Mail, Copy, Eye } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
+import { toast } from 'react-hot-toast';
+import * as emailService from '../services/emailTemplate';
 
 const initialFormData = {
   name: '',
@@ -8,46 +10,12 @@ const initialFormData = {
   type: 'welcome',
   description: '',
   content: '',
-  active: true,
+  status: true,
   variables: [],
 };
 
-const dummyTemplates = [
-  {
-    id: '1',
-    name: 'Welcome Email',
-    subject: 'Welcome to Our Dating App!',
-    type: 'welcome',
-    description: 'Sent to new users after registration',
-    content: `
-      <h1>Welcome {{user_name}}!</h1>
-      <p>Thank you for joining our dating app. We're excited to help you find meaningful connections.</p>
-      <p>To get started, please verify your email by clicking the link below:</p>
-      <a href="{{verification_link}}">Verify Email</a>
-    `,
-    lastModified: '2024-03-10T10:30:00',
-    active: true,
-    variables: ['user_name', 'verification_link'],
-  },
-  {
-    id: '2',
-    name: 'Email Verification',
-    subject: 'Verify Your Email Address',
-    type: 'verification',
-    description: 'Email verification request',
-    content: `
-      <h1>Hello {{user_name}},</h1>
-      <p>Please verify your email address by entering the following code:</p>
-      <h2>{{verification_code}}</h2>
-    `,
-    lastModified: '2024-03-09T15:45:00',
-    active: true,
-    variables: ['user_name', 'verification_code'],
-  },
-];
-
 export function EmailTemplates() {
-  const [templates, setTemplates] = useState(dummyTemplates);
+  const [templates, setTemplates] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,7 +23,39 @@ export function EmailTemplates() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [isLoading, setIsLoading] = useState(true);
   const [newVariable, setNewVariable] = useState('');
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalTemplates: 0
+  });
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+
+  const fetchTemplates = async () => {
+    try {
+      setIsLoading(true);
+      const response = await emailService.getAllEmailTemplates();
+      console.log('response is', response)
+      if (response.status && response.data) {
+        setTemplates(response.data);
+        setPagination({
+          currentPage: response.data.current_page,
+          totalPages: response.data.total_pages,
+          totalUsers: response.data.total_users
+        });
+      }
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const handleOpenModal = (template = null) => {
     if (template) {
@@ -65,7 +65,7 @@ export function EmailTemplates() {
         type: template.type,
         description: template.description,
         content: template.content,
-        active: template.active,
+        status: template.status,
         variables: [...template.variables],
       });
       setSelectedTemplate(template);
@@ -76,56 +76,88 @@ export function EmailTemplates() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try {
+      console.log('form data is ', formData)
+      if (selectedTemplate) {
+        const response = await emailService.updateEmailTemplate(selectedTemplate.id, formData);
+        if (response.status) {
+          toast.success('Template updated successfully');
+          await fetchTemplates();
+        }
+      } else {
+        const response = await emailService.createEmailTemplate(formData);
+        if (response.status) {
+          toast.success('Template created successfully');
+          await fetchTemplates();
+        }
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error(error.message || 'Something went wrong');
+    }
+  };
+
+  const handleViewTemplate = async (templateId) => {
+    try {
+      const response = await emailService.getEmailTemplateById(templateId);
+      if (response.status && response.data) {
+        setSelectedTemplate(response.data);
+        setIsViewModalOpen(true);
+      }
+    } catch (error) {
+      toast.error('Failed to load template details');
+    }
+  };
+
+
+  const handleDelete = async () => {
     if (selectedTemplate) {
-      setTemplates(templates.map(template =>
-        template.id === selectedTemplate.id
-          ? {
-              ...template,
-              ...formData,
-              lastModified: new Date().toISOString(),
-            }
-          : template
-      ));
-    } else {
-      const newTemplate = {
-        id: String(templates.length + 1),
-        ...formData,
-        lastModified: new Date().toISOString(),
+      try {
+        const response = await emailService.deleteEmailTemplate(selectedTemplate.id);
+        if (response.status) {
+          toast.success('Template deleted');
+          await fetchTemplates();
+          setSelectedTemplate(null);
+        }
+      } catch (error) {
+        toast.error(error.message || 'Delete failed');
+      } finally {
+        setIsDeleteModalOpen(false);
+      }
+    }
+  };
+
+
+  const handleCopy = async (template) => {
+    try {
+      console.log('template', template)
+      const { created_at, updated_at, ...rest } = template;
+
+      const copied = {
+        ...rest,
+        name: `${template.name} (Copy)`,
       };
-      setTemplates([...templates, newTemplate]);
-    }
-    setIsModalOpen(false);
-  };
-
-  const handleDelete = () => {
-    if (selectedTemplate) {
-      setTemplates(templates.filter(template => template.id !== selectedTemplate.id));
-      setIsDeleteModalOpen(false);
-      setSelectedTemplate(null);
+      delete copied.id; // remove ID if backend auto-generates
+      const response = await emailService.createEmailTemplate(copied);
+      if (response.status) {
+        toast.success('Template copied');
+        await fetchTemplates();
+      }
+    } catch (error) {
+      toast.error('Failed to copy template');
     }
   };
 
-  const handleCopy = (template) => {
-    const newTemplate = {
-      ...template,
-      id: String(templates.length + 1),
-      name: `${template.name} (Copy)`,
-      lastModified: new Date().toISOString(),
-    };
-    setTemplates([...templates, newTemplate]);
-  };
 
   const addVariable = () => {
-    if (newVariable.trim()) {
-      setFormData({
-        ...formData,
-        variables: [...formData.variables, newVariable.trim()],
-      });
-      setNewVariable('');
-    }
+    setFormData({
+      ...formData,
+      variables: [...formData.variables, { name: '', type: 'string' }]
+    });
   };
+
 
   const removeVariable = (index) => {
     setFormData({
@@ -136,7 +168,7 @@ export function EmailTemplates() {
 
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.subject.toLowerCase().includes(searchTerm.toLowerCase());
+      template.subject.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || template.type === typeFilter;
     return matchesSearch && matchesType;
   });
@@ -228,13 +260,12 @@ export function EmailTemplates() {
             </div>
 
             <div className="mt-4">
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                template.type === 'welcome' ? 'bg-green-100 text-green-800' :
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${template.type === 'welcome' ? 'bg-green-100 text-green-800' :
                 template.type === 'verification' ? 'bg-blue-100 text-blue-800' :
-                template.type === 'notification' ? 'bg-purple-100 text-purple-800' :
-                template.type === 'marketing' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
+                  template.type === 'notification' ? 'bg-purple-100 text-purple-800' :
+                    template.type === 'marketing' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                }`}>
                 {template.type}
               </span>
               {template.active && (
@@ -256,15 +287,16 @@ export function EmailTemplates() {
                     key={index}
                     className="rounded bg-gray-100 px-2 py-1 text-xs font-mono text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                   >
-                    {`{{${variable}}}`}
+                    {`{{${variable.name}}}`}
                   </code>
                 ))}
               </div>
             </div>
 
             <p className="mt-4 text-xs text-gray-500">
-              Last modified: {new Date(template.lastModified).toLocaleString()}
+              Last modified: {new Date(template.updated_at).toLocaleString()}
             </p>
+
           </div>
         ))}
       </div>
@@ -351,10 +383,10 @@ export function EmailTemplates() {
                 <div key={index} className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={variable}
+                    value={variable.name}
                     onChange={(e) => {
                       const newVariables = [...formData.variables];
-                      newVariables[index] = e.target.value;
+                      newVariables[index].name = e.target.value;
                       setFormData({ ...formData, variables: newVariables });
                     }}
                     className="block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
@@ -368,6 +400,7 @@ export function EmailTemplates() {
                   </button>
                 </div>
               ))}
+
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -390,8 +423,8 @@ export function EmailTemplates() {
             <input
               type="checkbox"
               id="active"
-              checked={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+              checked={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <label htmlFor="active" className="ml-2 text-sm text-gray-600 dark:text-gray-300">

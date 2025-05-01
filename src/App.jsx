@@ -18,7 +18,7 @@ import { BannedUsers } from './pages/BannedUsers';
 import { Interests } from './pages/Interests';
 import { IntroScreens } from './pages/IntroScreens';
 import { Settings } from './pages/Settings';
-import { Verification } from './pages/Verification';
+// import { Verification } from './pages/Verification';
 import { ActivityLogs } from './pages/ActivityLogs';
 import { EmailTemplates } from './pages/EmailTemplates';
 import { Support } from './pages/Support';
@@ -91,7 +91,7 @@ function App() {
           <Route path="interests" element={<Interests />} />
           <Route path="intro-screens" element={<IntroScreens />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="verifications" element={<Verification />} />
+          {/* <Route path="verifications" element={<Verification />} /> */}
           <Route path="logs" element={<ActivityLogs />} />
           <Route path="email-templates" element={<EmailTemplates />} />
           <Route path="support" element={<Support />} />

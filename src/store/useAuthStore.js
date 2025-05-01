@@ -17,7 +17,7 @@ const allPermissions = [
   'Banned',
   'Interests',
   'IntroScreens',
-  'Verifications',
+  // 'Verifications',
   'Logs',
   'EmailTemplates',
   'Support',
