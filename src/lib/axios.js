@@ -2,8 +2,10 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-hot-toast';
 
+import { API_BASE_URL } from '../../src/constants/api.js';
+
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
