@@ -359,7 +359,7 @@ export function Dashboard() {
                       </p>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(activity.timestamp).toLocaleString()}
+                      {new Date(activity.createdAt).toLocaleString()}
                     </span>
                   </div>
                 </div>

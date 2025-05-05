@@ -144,6 +144,11 @@ export function Users() {
     }
   };
 
+  const getInterestNameById = (id) => {
+    const interest = interests.find(interest => interest.id === id);
+    return interest ? interest.name : 'Unknown';  // Return the name or 'Unknown' if not found
+  };
+
   const interestOptions = interests.map((interest) => ({
     value: interest.id,
     label: interest.name,
@@ -164,7 +169,6 @@ export function Users() {
             ...userData,
             interests: matchedInterests
           });
-
           setSelectedUser(userData);
         }
       } catch (error) {
@@ -469,7 +473,7 @@ export function Users() {
                       <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700">
                         {user.profile_image ? (
                           <img
-                            src={`${API_BASE_URL}/${user.profile_image}`}
+                            src={user.profile_image.replace(/^http:\//, 'http://')}
                             alt={user.name}
                             className="h-full w-full rounded-full object-cover"
                           />
@@ -595,7 +599,7 @@ export function Users() {
             <div className="relative h-48 w-full overflow-hidden rounded-t-lg">
               {selectedUser.cover_image ? (
                 <img
-                  src={`${API_BASE_URL}/${selectedUser.cover_image}`}
+                  src={selectedUser.cover_image.replace(/^http:\//, 'http://')}
                   alt="Cover"
                   className="h-full w-full object-cover"
                 />
@@ -612,7 +616,8 @@ export function Users() {
                 <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white dark:border-gray-800">
                   {selectedUser.profile_image ? (
                     <img
-                      src={`${API_BASE_URL}/${selectedUser.profile_image}`}
+                      src={selectedUser.profile_image.replace(/^http:\//, 'http://')}
+
                       alt={selectedUser.name}
                       className="h-full w-full object-cover"
                     />
@@ -734,13 +739,13 @@ export function Users() {
                   <div>
                     <h4 className="mb-2 text-sm font-medium text-gray-500">Interests</h4>
                     <div className="flex flex-wrap gap-2">
-                      {selectedUser.interests?.length > 0 ? (
+                      {selectedUser.interests && selectedUser.interests.length > 0 ? (
                         selectedUser.interests.map((interest, index) => (
                           <span
                             key={index}
                             className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
                           >
-                            {interest}
+                            {getInterestNameById(interest)}
                           </span>
                         ))
                       ) : (
@@ -804,7 +809,7 @@ export function Users() {
               <>
                 <img
                   src={typeof formData.cover_image === 'string'
-                    ? `${API_BASE_URL}/${formData.cover_image}`
+                    ? `${formData.cover_image}`
                     : URL.createObjectURL(formData.cover_image)}
                   alt="Cover"
                   className="h-full w-full object-cover"
@@ -859,7 +864,7 @@ export function Users() {
               {formData.profile_image ? (
                 <img
                   src={typeof formData.profile_image === 'string'
-                    ? `${API_BASE_URL}/${formData.profile_image}`
+                    ? `${formData.profile_image}`
                     : URL.createObjectURL(formData.profile_image)}
                   alt="Profile"
                   className="h-full w-full object-cover"
@@ -934,7 +939,7 @@ export function Users() {
                   }));
                 }}
                 placeholder="Select Interests"
-                className="w-full" // Force full width
+                className="w-mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700" // Force full width
                 classNamePrefix="select"
               />
             </div>
