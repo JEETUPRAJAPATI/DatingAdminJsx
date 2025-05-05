@@ -7,10 +7,11 @@ import * as userService from '../services/user';
 import * as locationService from '../services/location';
 import * as interestService from '../services/interests';
 
+import { API_BASE_URL } from '../../src/constants/api.js';
+
 const initialFormData = {
   name: '',
   email: '',
-  password: '',
   mobile: '',
   i_am: 'Male',
   interested_in: 'Female',
@@ -29,7 +30,6 @@ const initialFormData = {
     pincode: '',
     locality: ''
   },
-  profession: '',
   marital_status: 'unmarried',
   category: 'Serious Relationship',
   profile_image: null,
@@ -180,31 +180,125 @@ export function Users() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const processedFormData = {
-      ...formData,
-      interests: formData.interests.map((interest) => interest.id), // Extract only the IDs
-    };
-    try {
+    console.log('Original form data:', formData);
 
-      console.log('Processed formData', processedFormData);
-      if (selectedUser) {
-        const response = await userService.updateUser(selectedUser.id, processedFormData);
-        if (response.status) {
-          toast.success('User updated successfully');
-          await fetchUsers(pagination.currentPage);
-        }
-      } else {
-        const response = await userService.createUser(processedFormData);
-        if (response.status) {
-          toast.success('User created successfully');
-          await fetchUsers(pagination.currentPage);
+    // Check for empty files first
+    // if (!formData.cover_image || !formData.profile_image) {
+    //   toast.error('Both images are required!');
+    //   return;
+    // }
+
+    try {
+      // Create a proper FormData object
+      const formDataToSend = new FormData();
+
+      // Add all basic fields with proper naming
+      formDataToSend.append('name', formData.name || '');
+      formDataToSend.append('email', formData.email || '');
+      formDataToSend.append('mobile', formData.mobile || '');
+      formDataToSend.append('i_am', formData.i_am || '');
+      formDataToSend.append('interested_in', formData.interested_in || '');
+      formDataToSend.append('age', formData.age || '');
+      formDataToSend.append('about', formData.about || '');
+      formDataToSend.append('skin_color', formData.skin_color || '');
+      formDataToSend.append('height', formData.height || '');
+      formDataToSend.append('weight', formData.weight || '');
+      formDataToSend.append('marital_status', formData.marital_status || '');
+      formDataToSend.append('category', formData.category || '');
+
+      // Handle arrays with proper naming (using brackets in the key name)
+      if (formData.likes && Array.isArray(formData.likes)) {
+        formData.likes.forEach(like => {
+          formDataToSend.append('likes[]', like);
+        });
+      }
+
+      if (formData.hobbies && Array.isArray(formData.hobbies)) {
+        formData.hobbies.forEach(hobby => {
+          formDataToSend.append('hobbies[]', hobby);
+        });
+      }
+
+      if (formData.interests && Array.isArray(formData.interests)) {
+        formData.interests.forEach(interest => {
+          // Extract ID if it's an object
+          const interestId = interest.id || interest;
+          formDataToSend.append('interests[]', interestId);
+        });
+      }
+
+      // Handle address object with proper naming (using brackets in the key name)
+      if (formData.address && typeof formData.address === 'object') {
+        Object.keys(formData.address).forEach(key => {
+          if (formData.address[key] !== null && formData.address[key] !== undefined) {
+            formDataToSend.append(`address[${key}]`, formData.address[key]);
+          }
+        });
+      }
+
+      // Finally append files - always do this last
+      // if (formData.profile_image instanceof File) {
+      //   formDataToSend.append('profile_image', formData.profile_image);
+      // }
+      if (formData.cover_image && formData.cover_image instanceof File) {
+        console.log('--------------------------------------------------------------------------------------enter')
+        formDataToSend.append('cover_image', formData.cover_image);
+      }
+
+      // if (formData.cover_image instanceof File) {
+      //   formDataToSend.append('cover_image', formData.cover_image);
+      // }
+
+      if (formData.profile_image && formData.profile_image instanceof File) {
+
+        console.log('--------------------------------------------------------------------------------------enter1')
+        formDataToSend.append('profile_image', formData.profile_image);
+      }
+
+      // Log the complete FormData entries
+      console.log('---- Complete FormData Contents ----');
+      for (let pair of formDataToSend.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(pair[0], '(File):', {
+            name: pair[1].name,
+            type: pair[1].type,
+            size: `${(pair[1].size / 1024 / 1024).toFixed(2)}MB`
+          });
+        } else {
+          console.log(pair[0], ':', pair[1]);
         }
       }
-      setIsModalOpen(false);
+      console.log('----------------------------------');
+
+      // Send request with increased timeout
+      let response;
+      if (selectedUser) {
+        console.log('Updating user with ID:', selectedUser.id);
+        response = await userService.updateUser(selectedUser.id, formDataToSend);
+      } else {
+        console.log('Creating new user...');
+        response = await userService.createUser(formDataToSend);
+      }
+
+      console.log('Server response:', response);
+
+      if (response.status) {
+        toast.success(selectedUser ? 'User updated successfully' : 'User created successfully');
+        await fetchUsers(pagination.currentPage);
+        setIsModalOpen(false);
+      }
     } catch (error) {
-      toast.error(error.message);
+      console.error('DETAILED ERROR:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack
+      });
+      toast.error(error.message || 'An error occurred');
     }
   };
+
 
   const handleDelete = async () => {
     if (selectedUser) {
@@ -221,6 +315,18 @@ export function Users() {
       }
     }
   };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      setProfile({ ...profile, profile_image: file });
+    }
+  };
+
 
   const handleStatusChange = async (id, status) => {
     try {
@@ -363,7 +469,7 @@ export function Users() {
                       <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700">
                         {user.profile_image ? (
                           <img
-                            src={user.profile_image}
+                            src={`${API_BASE_URL}/${user.profile_image}`}
                             alt={user.name}
                             className="h-full w-full rounded-full object-cover"
                           />
@@ -489,7 +595,7 @@ export function Users() {
             <div className="relative h-48 w-full overflow-hidden rounded-t-lg">
               {selectedUser.cover_image ? (
                 <img
-                  src={selectedUser.cover_image}
+                  src={`${API_BASE_URL}/${selectedUser.cover_image}`}
                   alt="Cover"
                   className="h-full w-full object-cover"
                 />
@@ -506,7 +612,7 @@ export function Users() {
                 <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-white dark:border-gray-800">
                   {selectedUser.profile_image ? (
                     <img
-                      src={selectedUser.profile_image}
+                      src={`${API_BASE_URL}/${selectedUser.profile_image}`}
                       alt={selectedUser.name}
                       className="h-full w-full object-cover"
                     />
@@ -690,16 +796,20 @@ export function Users() {
         onClose={() => setIsModalOpen(false)}
         title={selectedUser ? 'Edit User' : 'Add New User'}
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" >
+
           {/* Cover Image Upload */}
           <div className="relative h-48 w-full overflow-hidden rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
             {formData.cover_image ? (
               <>
                 <img
-                  src={typeof formData.cover_image === 'string' ? formData.cover_image : URL.createObjectURL(formData.cover_image)}
+                  src={typeof formData.cover_image === 'string'
+                    ? `${API_BASE_URL}/${formData.cover_image}`
+                    : URL.createObjectURL(formData.cover_image)}
                   alt="Cover"
                   className="h-full w-full object-cover"
                 />
+
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, cover_image: null })}
@@ -721,6 +831,20 @@ export function Users() {
                     }
                   }}
                 />
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      console.log('File selected:', file);
+                      setFormData({ ...formData, cover_image: file });
+                    }
+                  }}
+                />
+
                 <div className="text-center">
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
                   <p className="mt-2 text-sm text-gray-500">Click to upload cover image</p>
@@ -734,7 +858,9 @@ export function Users() {
             <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white dark:border-gray-800">
               {formData.profile_image ? (
                 <img
-                  src={typeof formData.profile_image === 'string' ? formData.profile_image : URL.createObjectURL(formData.profile_image)}
+                  src={typeof formData.profile_image === 'string'
+                    ? `${API_BASE_URL}/${formData.profile_image}`
+                    : URL.createObjectURL(formData.profile_image)}
                   alt="Profile"
                   className="h-full w-full object-cover"
                 />
@@ -763,7 +889,7 @@ export function Users() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Name
+                Name<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="text"
@@ -774,21 +900,24 @@ export function Users() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email
+                Email<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="email"
                 required
+                disabled={!!selectedUser} // disables when editing
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               />
+
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2"> {/* Make it span full width */}
-              <h4 className="mb-2 text-sm font-medium text-gray-500">Interests</h4>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Interests<span className="text-red-800 ml-1 ">*</span> </label>
               <Select
                 options={interestOptions}
                 isMulti
@@ -815,10 +944,11 @@ export function Users() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Mobile
+                Mobile<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="tel"
+                disabled={!!selectedUser} // disables when editing
                 value={formData.mobile}
                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
@@ -827,7 +957,7 @@ export function Users() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
 
-                Age
+                Age<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="number"
@@ -842,7 +972,7 @@ export function Users() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                I am
+                I am<span className="text-red-800 ml-1 ">*</span>
               </label>
               <select
                 value={formData.i_am}
@@ -856,7 +986,7 @@ export function Users() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Interested In
+                Interested In<span className="text-red-800 ml-1 ">*</span>
               </label>
               <select
                 value={formData.interested_in}
@@ -872,7 +1002,7 @@ export function Users() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              About
+              About<span className="text-red-800 ml-1 ">*</span>
             </label>
             <textarea
               value={formData.about}
@@ -886,7 +1016,7 @@ export function Users() {
             {/* Country */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Country
+                Country<span className="text-red-800 ml-1 ">*</span>
               </label>
               <Select
                 options={countries.map((country) => ({
@@ -903,7 +1033,7 @@ export function Users() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                State
+                State<span className="text-red-800 ml-1 ">*</span>
               </label>
               <Select
                 options={states.map((state) => ({
@@ -922,7 +1052,7 @@ export function Users() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                City
+                City<span className="text-red-800 ml-1 ">*</span>
               </label>
               <Select
                 options={cities.map((city) => ({
@@ -948,7 +1078,7 @@ export function Users() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Pincode
+                Pincode<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="text"
@@ -962,7 +1092,7 @@ export function Users() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Locality
+                Locality<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="text"
