@@ -91,6 +91,9 @@ export function Admins() {
     e.preventDefault();
     try {
       console.log('formdata', formData)
+      if (formData?.permissions?._id) {
+        delete formData.permissions._id;
+      }
       if (selectedAdmin) {
         const response = await adminService.updateAdmin(selectedAdmin.id, formData);
         if (response.status) {
@@ -106,7 +109,11 @@ export function Admins() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      if (Array.isArray(error.errors)) {
+        error.errors.forEach(err => toast.error(err.message));
+      } else {
+        toast.error(error.message || 'Something went wrong');
+      }
     }
   };
 
@@ -273,7 +280,7 @@ export function Admins() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
+              Name<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="text"
@@ -285,7 +292,7 @@ export function Admins() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
+              Email<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="email"
@@ -298,7 +305,7 @@ export function Admins() {
           {!selectedAdmin && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
+                Password<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="password"
@@ -311,7 +318,7 @@ export function Admins() {
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Mobile
+              Mobile<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="tel"
@@ -323,7 +330,7 @@ export function Admins() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Role
+              Role<span className="text-red-800 ml-1 ">*</span>
             </label>
             <select
               value={formData.role}
@@ -336,7 +343,7 @@ export function Admins() {
             </select>
           </div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Permissions
+            Permissions<span className="text-red-800 ml-1 ">*</span>
           </label>
           <div className="mt-2 grid grid-cols-2 gap-2">
 

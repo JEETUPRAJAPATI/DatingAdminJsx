@@ -102,7 +102,11 @@ export function Questions() {
       }
       setIsQuestionModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      if (Array.isArray(error.errors)) {
+        error.errors.forEach(err => toast.error(err.message));
+      } else {
+        toast.error(error.message || 'Something went wrong');
+      }
     }
   };
 
@@ -124,7 +128,11 @@ export function Questions() {
       }
       setIsCategoryModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      if (Array.isArray(error.errors)) {
+        error.errors.forEach(err => toast.error(err.message));
+      } else {
+        toast.error(error.message || 'Something went wrong');
+      }
     }
   };
 
@@ -455,7 +463,7 @@ export function Questions() {
         <form onSubmit={handleQuestionSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Question
+              Question<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="text"
@@ -468,7 +476,7 @@ export function Questions() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Type
+                Type<span className="text-red-800 ml-1 ">*</span>
               </label>
               <select
                 value={questionForm.type}
@@ -482,13 +490,16 @@ export function Questions() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Category
+                Category<span className="text-red-800 ml-1 ">*</span>
               </label>
               <select
                 value={questionForm.category_id}
-                onChange={(e) => setQuestionForm({ ...questionForm, category_id: e.target.value })}
+                onChange={(e) =>
+                  setQuestionForm({ ...questionForm, category_id: e.target.value })
+                }
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
               >
+                <option value="">Choose One</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -496,12 +507,13 @@ export function Questions() {
                 ))}
               </select>
             </div>
+
           </div>
 
           {(questionForm.type === 'single' || questionForm.type === 'multiple') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Options
+                Options<span className="text-red-800 ml-1 ">*</span>
               </label>
               <div className="mt-2 space-y-2">
                 {questionForm.options.map((option, index) => (
@@ -557,7 +569,7 @@ export function Questions() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Points
+              Points<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="number"
@@ -614,7 +626,7 @@ export function Questions() {
         <form onSubmit={handleCategorySubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
+              Name<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="text"
@@ -626,7 +638,7 @@ export function Questions() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              Description<span className="text-red-800 ml-1 ">*</span>
             </label>
             <textarea
               required

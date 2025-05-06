@@ -25,7 +25,7 @@ export const createAdmin = async (data) => {
         const response = await api.post(BASE_URL, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to create admin');
+        throw error.response?.data || { message: 'Failed to create admin' };
     }
 };
 
@@ -34,7 +34,7 @@ export const updateAdmin = async (id, data) => {
         const response = await api.put(`${BASE_URL}/${id}`, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to update admin');
+        throw error.response?.data || { message: 'Failed to update admin' };
     }
 };
 

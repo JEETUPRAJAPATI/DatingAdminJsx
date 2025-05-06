@@ -24,7 +24,7 @@ export const createSubscription = async (data) => {
         const response = await api.post(API_ENDPOINTS.SUBSCRIPTIONS, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to create subscription');
+        throw error.response?.data || { message: 'Failed to create subscription' };
     }
 };
 
@@ -33,7 +33,7 @@ export const updateSubscription = async (id, data) => {
         const response = await api.put(`${API_ENDPOINTS.SUBSCRIPTIONS}/${id}`, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to update subscription');
+        throw error.response?.data || { message: 'Failed to update subscription' };
     }
 };
 
@@ -42,6 +42,6 @@ export const updateSubscriptionStatus = async (id, status) => {
         const response = await api.patch(`${API_ENDPOINTS.SUBSCRIPTIONS}/${id}/status`, { status });
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to update subscription status');
+        throw error.response?.data || { message: 'Failed to update subscription status' };
     }
 };

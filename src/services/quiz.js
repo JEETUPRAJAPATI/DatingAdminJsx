@@ -26,12 +26,8 @@ export const createQuestion = async (data) => {
         const response = await api.post(`${BASE_URL}/questions`, data);
         return response.data;
     } catch (error) {
-        let errorMessage = 'Failed to create question';
-        if (error.response?.data?.errors?.length > 0) {
-            errorMessage = error.response.data.errors[0].message;
-        } else if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
-        }
+        console.log('error is ', error)
+        throw error.response?.data || { message: 'Failed to update question' };
     }
 };
 
@@ -80,7 +76,7 @@ export const createCategory = async (data) => {
         const response = await api.post(`${BASE_URL}/categories`, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to create category');
+        throw error.response?.data || { message: 'Failed to create category' };
     }
 };
 
@@ -89,7 +85,7 @@ export const updateCategory = async (id, data) => {
         const response = await api.put(`${BASE_URL}/categories/${id}`, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to update category');
+        throw error.response?.data || { message: 'Failed to update category' };
     }
 };
 

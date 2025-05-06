@@ -80,7 +80,11 @@ export function Subscriptions() {
       }
       setIsModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      if (Array.isArray(error.errors)) {
+        error.errors.forEach(err => toast.error(err.message));
+      } else {
+        toast.error(error.message || 'Something went wrong');
+      }
     }
   };
 
@@ -93,7 +97,11 @@ export function Subscriptions() {
         setIsDeleteModalOpen(false);
         setSelectedSubscription(null);
       } catch (error) {
-        toast.error(error.message);
+        if (Array.isArray(error.errors)) {
+          error.errors.forEach(err => toast.error(err.message));
+        } else {
+          toast.error(error.message || 'Something went wrong');
+        }
       }
     }
   };
@@ -276,7 +284,7 @@ export function Subscriptions() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Plan Name
+              Plan Name<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="text"
@@ -289,13 +297,12 @@ export function Subscriptions() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Price ($)
+                Price ($)<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="number"
                 required
-                min="0"
-                step="0.01"
+                min="50"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
@@ -303,7 +310,7 @@ export function Subscriptions() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Duration (days)
+                Duration (days)<span className="text-red-800 ml-1 ">*</span>
               </label>
               <input
                 type="number"
@@ -317,7 +324,7 @@ export function Subscriptions() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              Description<span className="text-red-800 ml-1 ">*</span>
             </label>
             <textarea
               value={formData.description}
@@ -328,7 +335,7 @@ export function Subscriptions() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Features
+              Features<span className="text-red-800 ml-1 ">*</span>
             </label>
             <div className="mt-2 space-y-2">
               {formData.features.map((feature, index) => (

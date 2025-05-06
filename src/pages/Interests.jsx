@@ -291,7 +291,7 @@ export function Interests() {
         <form onSubmit={handleInterestSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
+              Name<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="text"
@@ -303,7 +303,7 @@ export function Interests() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Category
+              Category<span className="text-red-800 ml-1 ">*</span>
             </label>
             <select
               required
@@ -372,7 +372,7 @@ export function Interests() {
         <form onSubmit={handleCategorySubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
+              Name<span className="text-red-800 ml-1 ">*</span>
             </label>
             <input
               type="text"
@@ -384,7 +384,7 @@ export function Interests() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              Description<span className="text-red-800 ml-1 ">*</span>
             </label>
             <textarea
               value={categoryForm.description}

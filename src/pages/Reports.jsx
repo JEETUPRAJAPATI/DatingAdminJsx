@@ -60,8 +60,10 @@ export function Reports() {
   };
 
   const filteredReports = reports.filter(report => {
-    const matchesSearch = report.reported_user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.reporter_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const reportedUserName = report.reportedUser?.name?.toLowerCase() || '';
+    const reporterName = report.reportedBy?.name?.toLowerCase() || '';
+
+    const matchesSearch = reportedUserName.includes(searchTerm.toLowerCase()) || reporterName.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -128,13 +130,13 @@ export function Reports() {
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4">
                   <img
-                    src={report.reported_user_avatar}
-                    alt={report.reported_user_name}
-                    className="h-12 w-12 rounded-full"
+                    src={report.reportedUser?.profile_image || '/default-avatar.png'}
+                    alt={report.reportedUser?.name || 'Unknown User'}
+                    className="h-12 w-12 rounded-full object-cover"
                   />
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{report.reported_user_name}</h3>
+                      <h3 className="font-medium">{report.reportedUser?.name || 'Unknown User'}</h3>
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${report.status === 'pending'
                           ? 'bg-yellow-100 text-yellow-800'
@@ -149,15 +151,15 @@ export function Reports() {
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      Reported by {report.reporter_name} • {formatDate(report.date)}
+                      Reported by {report.reportedBy?.name || 'Unknown'} • {formatDate(report?.createdAt)}
                     </p>
                     <div className="mt-2">
                       <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
                         <AlertTriangle className="mr-1 h-3 w-3" />
-                        {report.reason}
+                        {report?.reason}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{report.description}</p>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{report?.description}</p>
                   </div>
                 </div>
                 <div className="flex space-x-2">

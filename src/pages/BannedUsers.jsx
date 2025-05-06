@@ -62,10 +62,10 @@ export function BannedUsers() {
   };
 
   const filteredUsers = bannedUsers.filter(user => {
-    const matchesSearch = user.user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = user?.user?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.user?.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDuration = durationFilter === 'all' ||
-      (durationFilter === 'temporary' && user.duration > 0) ||
+      (durationFilter === 'temporary' && user?.duration > 0) ||
       (durationFilter === 'permanent' && !user.duration);
     return matchesSearch && matchesDuration;
   });

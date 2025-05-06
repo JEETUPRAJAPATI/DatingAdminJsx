@@ -808,13 +808,16 @@ export function Users() {
             {formData.cover_image ? (
               <>
                 <img
-                  src={typeof formData.cover_image === 'string'
-                    ? `${formData.cover_image}`
-                    : URL.createObjectURL(formData.cover_image)}
+                  src={
+                    formData.cover_image
+                      ? typeof formData.cover_image === 'string'
+                        ? formData.cover_image.replace(/^http:\//, 'http://')
+                        : URL.createObjectURL(formData.cover_image)
+                      : placeholderImageUrl
+                  }
                   alt="Cover"
                   className="h-full w-full object-cover"
                 />
-
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, cover_image: null })}
@@ -863,12 +866,17 @@ export function Users() {
             <div className="relative h-full w-full overflow-hidden rounded-full border-4 border-white dark:border-gray-800">
               {formData.profile_image ? (
                 <img
-                  src={typeof formData.profile_image === 'string'
-                    ? `${formData.profile_image}`
-                    : URL.createObjectURL(formData.profile_image)}
-                  alt="Profile"
+                  src={
+                    formData.profile_image
+                      ? typeof formData.profile_image === 'string'
+                        ? formData.profile_image.replace(/^http:\//, 'http://')
+                        : URL.createObjectURL(formData.profile_image)
+                      : placeholderImageUrl
+                  }
+                  alt="Cover"
                   className="h-full w-full object-cover"
                 />
+
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-700">
                   <User className="h-12 w-12 text-gray-400" />
