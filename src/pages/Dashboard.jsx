@@ -181,7 +181,8 @@ export function Dashboard() {
             ...prev.options,
             xaxis: {
               ...prev.options.xaxis,
-              categories: userGrowthResponse.data.labels
+              categories: userGrowthResponse.data.labels,
+              type: 'category'
             }
           },
           series: [{
@@ -191,6 +192,7 @@ export function Dashboard() {
         }));
       }
 
+
       if (revenueResponse.status === 'success' && revenueResponse.data) {
         setRevenueData(prev => ({
           ...prev,
@@ -198,6 +200,7 @@ export function Dashboard() {
             ...prev.options,
             xaxis: {
               ...prev.options.xaxis,
+              type: 'category', // Important fix
               categories: revenueResponse.data.labels
             }
           },
@@ -207,6 +210,8 @@ export function Dashboard() {
           }]
         }));
       }
+
+
     } catch (error) {
       toast.error('Failed to fetch chart data');
     }

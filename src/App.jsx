@@ -24,6 +24,7 @@ import { EmailTemplates } from './pages/EmailTemplates';
 import { Support } from './pages/Support';
 import { Profile } from './pages/Profile';
 import { useAuthStore } from './store/useAuthStore';
+import { ResetPassword } from './pages/auth/ResetPassword';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -68,6 +69,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/" element={<ResetPassword />} />
+
 
         {/* Protected Routes */}
         <Route

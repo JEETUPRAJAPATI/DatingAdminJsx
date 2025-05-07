@@ -39,7 +39,7 @@ const navigation = [
   { name: 'Interests', href: '/interests', icon: Tags, permission: 'interests' },
   { name: 'Theme & Settings', href: '/settings', icon: Palette, permission: 'settings' },
   // { name: 'Verifications', href: '/verifications', icon: FileCheck, permission: 'verifications' },
-  { name: 'Activity Logs', href: '/logs', icon: Activity, permission: 'logs' },
+  // { name: 'Activity Logs', href: '/logs', icon: Activity, permission: 'logs' },
   { name: 'Email Templates', href: '/email-templates', icon: Mail, permission: 'emailtemplates' },
   { name: 'Support', href: '/support', icon: HelpCircle, permission: 'support' },
 ];

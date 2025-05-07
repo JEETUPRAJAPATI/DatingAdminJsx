@@ -64,3 +64,21 @@ export const assignRoleAndPermissions = async (id, data) => {
         throw new Error(error.response?.data?.message || 'Failed to assign role and permissions');
     }
 };
+export const forgotPassword = async (data) => {
+    try {
+        const response = await api.post(`/api/admin/forgot-password`, data);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to assign role and permissions');
+    }
+};
+
+export const resetPassword = async ({ email, token, password, confirmPassword }) => {
+    const response = await api.post('/api/admin/reset-password', {
+        email,
+        token,
+        password,
+        confirmPassword
+    });
+    return response.data;
+};

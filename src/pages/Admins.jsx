@@ -4,6 +4,7 @@ import { Modal } from '../components/ui/Modal';
 import { toast } from 'react-hot-toast';
 import * as adminService from '../services/admin';
 
+import { API_BASE_URL } from '../../src/constants/api.js';
 const allPermissions = [
   'Dashboard',
   'Users',
@@ -20,7 +21,7 @@ const allPermissions = [
   'Interests',
   'IntroScreens',
   // 'Verifications',
-  'Logs',
+  // 'Logs',
   'EmailTemplates',
   'Support',
 ];
@@ -221,7 +222,18 @@ export function Admins() {
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700">
-                        <User className="h-full w-full p-2 text-gray-500 dark:text-gray-400" />
+
+                        <img
+                          src={
+                            admin?.profile_image instanceof File
+                              ? URL.createObjectURL(admin?.profile_image)
+                              : admin?.profile_image
+                                ? `${API_BASE_URL}/${admin?.profile_image}`
+                                : `https://ui-avatars.com/api/?name=${encodeURIComponent(admin.name)}`
+                          }
+                          alt={admin.name}
+                          className="h-full w-full p-2 text-gray-500 dark:text-gray-400"
+                        />
                       </div>
                       <div className="ml-4">
                         <div className="font-medium text-gray-900 dark:text-white">{admin.name}</div>

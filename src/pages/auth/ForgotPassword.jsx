@@ -1,18 +1,29 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Await, Link } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
+import { forgotPassword } from '../../services/admin.js';
+import { toast } from 'react-hot-toast';
 
 export function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle password reset logic here
-    console.log('Reset password for:', email);
-    setSubmitted(true);
-  };
+    setError('');
 
+    try {
+      const response = await forgotPassword({ email });
+      if (response.status) {
+        setSubmitted(true);  // Show confirmation message
+      } else {
+        setError(response.message || 'Something went wrong');
+      }
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+    }
+  };
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 dark:bg-gray-900 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">

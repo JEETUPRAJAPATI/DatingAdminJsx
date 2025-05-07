@@ -18,7 +18,7 @@ const allPermissions = [
   'Interests',
   'IntroScreens',
   // 'Verifications',
-  'Logs',
+  // 'Logs',
   'EmailTemplates',
   'Support',
 ];
