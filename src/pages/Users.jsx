@@ -245,7 +245,6 @@ export function Users() {
       //   formDataToSend.append('profile_image', formData.profile_image);
       // }
       if (formData.cover_image && formData.cover_image instanceof File) {
-        console.log('--------------------------------------------------------------------------------------enter')
         formDataToSend.append('cover_image', formData.cover_image);
       }
 
@@ -254,8 +253,6 @@ export function Users() {
       // }
 
       if (formData.profile_image && formData.profile_image instanceof File) {
-
-        console.log('--------------------------------------------------------------------------------------enter1')
         formDataToSend.append('profile_image', formData.profile_image);
       }
 
@@ -392,6 +389,11 @@ export function Users() {
     await fetchCities(formData.address.country, state);
   };
 
+  const filteredUsers = users.filter(user =>
+    (user.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.email ?? '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const renderSkeleton = () => (
     <div className="space-y-4">
       {[1, 2, 3].map((index) => (
@@ -466,7 +468,7 @@ export function Users() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id}>
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center">
