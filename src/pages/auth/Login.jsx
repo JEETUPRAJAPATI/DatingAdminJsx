@@ -19,7 +19,7 @@ export function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -37,7 +37,7 @@ export function Login() {
       if (response.status && response.data) {
         setAdmin(response.data.admin);
         toast.success('Login successful!');
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         throw new Error('Invalid response from server');
       }
