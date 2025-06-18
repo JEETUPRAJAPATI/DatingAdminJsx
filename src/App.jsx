@@ -26,6 +26,8 @@ import { Profile } from './pages/Profile';
 import { useAuthStore } from './store/useAuthStore';
 import { ResetPassword } from './pages/auth/ResetPassword';
 import { LandingPage } from './pages/LandingPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsConditionsPage from './pages/TermsConditionsPage';
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -71,7 +73,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/" element={<ResetPassword />} />
-
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-conditions" element={<TermsConditionsPage />} />
 
         {/* Protected Routes */}
         <Route

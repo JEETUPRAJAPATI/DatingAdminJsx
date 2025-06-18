@@ -17,7 +17,10 @@ import {
     Zap,
     Award,
     CheckCircle,
-} from "lucide-react"
+    Menu,
+    X,
+} from "lucide-react";
+
 import { useState, useEffect } from "react"
 
 export const LandingPage = () => {
@@ -25,7 +28,8 @@ export const LandingPage = () => {
     const [openFaq, setOpenFaq] = useState(null)
     const [currentTestimonial, setCurrentTestimonial] = useState(0)
     const [scrollY, setScrollY] = useState(0)
-
+    const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [activeSection, setActiveSection] = useState("home")
     // Auto-slide testimonials
     useEffect(() => {
         const interval = setInterval(() => {
@@ -49,10 +53,11 @@ export const LandingPage = () => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         setIsVisible((prev) => ({ ...prev, [entry.target.id]: true }))
+                        setActiveSection(entry.target.id)
                     }
                 })
             },
-            { threshold: 0.1 },
+            { threshold: 0.3 },
         )
 
         const elements = document.querySelectorAll("[id]")
@@ -155,8 +160,169 @@ export const LandingPage = () => {
         }
     }
 
+    const scrollToSection = (sectionId) => {
+        const element = document.getElementById(sectionId)
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth" })
+        }
+        setIsMenuOpen(false)
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 overflow-x-hidden">
+            {/* Header Navigation */}
+            <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800/50">
+                <div className="container mx-auto px-4">
+                    <div className="flex items-center justify-between h-16 md:h-20">
+                        {/* Logo */}
+                        <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full flex items-center justify-center">
+                                <Heart className="h-4 w-4 md:h-5 md:w-5 text-black" />
+                            </div>
+                            <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-green-400 bg-clip-text text-transparent">
+                                LoveConnect
+                            </span>
+                        </div>
+
+                        {/* Desktop Navigation */}
+                        <nav className="hidden md:flex items-center space-x-8">
+                            <button
+                                onClick={() => scrollToSection("home")}
+                                className={`text-sm font-medium transition-colors ${activeSection === "home" ? "text-cyan-400" : "text-gray-300 hover:text-white"
+                                    }`}
+                            >
+                                Home
+                            </button>
+                            <button
+                                onClick={() => scrollToSection("features")}
+                                className={`text-sm font-medium transition-colors ${activeSection === "features" ? "text-cyan-400" : "text-gray-300 hover:text-white"
+                                    }`}
+                            >
+                                Features
+                            </button>
+                            <button
+                                onClick={() => scrollToSection("how-it-works")}
+                                className={`text-sm font-medium transition-colors ${activeSection === "how-it-works" ? "text-cyan-400" : "text-gray-300 hover:text-white"
+                                    }`}
+                            >
+                                How It Works
+                            </button>
+                            <button
+                                onClick={() => scrollToSection("preview")}
+                                className={`text-sm font-medium transition-colors ${activeSection === "preview" ? "text-cyan-400" : "text-gray-300 hover:text-white"
+                                    }`}
+                            >
+                                Preview
+                            </button>
+                            <button
+                                onClick={() => scrollToSection("testimonials")}
+                                className={`text-sm font-medium transition-colors ${activeSection === "testimonials" ? "text-cyan-400" : "text-gray-300 hover:text-white"
+                                    }`}
+                            >
+                                Reviews
+                            </button>
+                            <button
+                                onClick={() => scrollToSection("faq")}
+                                className={`text-sm font-medium transition-colors ${activeSection === "faq" ? "text-cyan-400" : "text-gray-300 hover:text-white"
+                                    }`}
+                            >
+                                FAQ
+                            </button>
+                            <a
+                                href="/privacy-policy"
+                                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                            >
+                                Privacy Policy
+                            </a>
+                            <a
+                                href="/terms-conditions"
+                                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                            >
+                                Terms & Conditions
+                            </a>
+                        </nav>
+
+                        {/* CTA Button */}
+                        <div className="hidden md:flex items-center space-x-4">
+                            <a
+                                href='/login' target="_blank"
+                                className="bg-gradient-to-r from-cyan-500 to-green-500 text-black px-4 py-2 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
+                            >
+                                Admin login
+                            </a>
+
+                        </div>
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+                        >
+                            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                    </div>
+
+                    {/* Mobile Navigation */}
+                    {isMenuOpen && (
+                        <div className="md:hidden py-4 border-t border-gray-800/50">
+                            <nav className="flex flex-col space-y-4">
+                                <button
+                                    onClick={() => scrollToSection("home")}
+                                    className="text-left text-gray-300 hover:text-cyan-400 transition-colors"
+                                >
+                                    Home
+                                </button>
+                                <button
+                                    onClick={() => scrollToSection("features")}
+                                    className="text-left text-gray-300 hover:text-cyan-400 transition-colors"
+                                >
+                                    Features
+                                </button>
+                                <button
+                                    onClick={() => scrollToSection("how-it-works")}
+                                    className="text-left text-gray-300 hover:text-cyan-400 transition-colors"
+                                >
+                                    How It Works
+                                </button>
+                                <button
+                                    onClick={() => scrollToSection("preview")}
+                                    className="text-left text-gray-300 hover:text-cyan-400 transition-colors"
+                                >
+                                    Preview
+                                </button>
+                                <button
+                                    onClick={() => scrollToSection("testimonials")}
+                                    className="text-left text-gray-300 hover:text-cyan-400 transition-colors"
+                                >
+                                    Reviews
+                                </button>
+                                <button
+                                    onClick={() => scrollToSection("faq")}
+                                    className="text-left text-gray-300 hover:text-cyan-400 transition-colors"
+                                >
+                                    FAQ
+                                </button>
+                                <a href="/privacy-policy" className="text-left text-gray-300 hover:text-cyan-400 transition-colors">
+                                    Privacy Policy
+                                </a>
+                                <a
+                                    href="/terms-conditions"
+                                    className="text-left text-gray-300 hover:text-cyan-400 transition-colors"
+                                >
+                                    Terms & Conditions
+                                </a>
+                                <a
+                                    href='/login' target="_blank"
+                                    className="bg-gradient-to-r from-cyan-500 to-green-500 text-black px-4 py-2 rounded-full font-semibold text-sm w-fit"
+                                >
+                                    Admin login
+                                </a>
+                            </nav>
+                        </div>
+                    )}
+                </div>
+            </header>
+
             {/* Consistent Dark Background Pattern */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black/80 to-gray-900/50"></div>
@@ -196,9 +362,9 @@ export const LandingPage = () => {
                                     </div>
                                 </button>
                                 <div className="flex items-center justify-center">
-                                    <a href="/login" target="_blank" rel="noopener noreferrer">
+                                    <a href="/" target="_blank" rel="noopener noreferrer">
                                         <div className="bg-gray-800/50 backdrop-blur-sm border border-cyan-500/30 px-3 md:px-4 py-2 rounded-lg hover:border-cyan-500/60 transition-all duration-300">
-                                            <span className="text-sm text-cyan-400">Login</span>
+                                            <span className="text-sm text-cyan-400">Available on Android</span>
                                         </div>
                                     </a>
                                 </div>
@@ -741,9 +907,9 @@ export const LandingPage = () => {
             {/* Footer Section */}
             <footer className="text-white py-8 md:py-12 relative border-t border-gray-800/50">
                 <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
                         {/* Logo and Description */}
-                        <div className="animate-fade-in-up">
+                        <div className="md:col-span-2">
                             <div className="flex items-center mb-3 md:mb-4">
                                 <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full flex items-center justify-center mr-3">
                                     <Heart className="h-4 w-4 md:h-5 md:w-5 text-black" />
@@ -762,36 +928,62 @@ export const LandingPage = () => {
                             </div>
                         </div>
 
-                        {/* Contact & Support */}
-                        <div className="animate-fade-in-up delay-200">
-                            <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-cyan-400">Contact & Support</h3>
+                        {/* Quick Links */}
+                        <div>
+                            <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-cyan-400">Quick Links</h3>
                             <div className="space-y-2">
+                                <button
+                                    onClick={() => scrollToSection("features")}
+                                    className="block text-gray-400 hover:text-cyan-400 transition-colors text-sm"
+                                >
+                                    Features
+                                </button>
+                                <button
+                                    onClick={() => scrollToSection("how-it-works")}
+                                    className="block text-gray-400 hover:text-cyan-400 transition-colors text-sm"
+                                >
+                                    How It Works
+                                </button>
+                                <a
+                                    href="/privacy-policy"
+                                    className="block text-gray-400 hover:text-cyan-400 transition-colors text-sm"
+                                >
+                                    Privacy Policy
+                                </a>
+                                <a
+                                    href="/terms-conditions"
+                                    className="block text-gray-400 hover:text-cyan-400 transition-colors text-sm"
+                                >
+                                    Terms & Conditions
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Contact & Social */}
+                        <div>
+                            <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-green-400">Connect</h3>
+                            <div className="space-y-2 mb-4">
                                 <div className="flex items-center hover:text-cyan-400 transition-colors cursor-pointer">
                                     <Mail className="h-4 w-4 md:h-5 md:w-5 text-cyan-500 mr-2" />
                                     <span className="text-gray-400 text-sm md:text-base">support@loveconnect.app</span>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Social Links */}
-                        <div className="animate-fade-in-up delay-400">
-                            <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-green-400">Follow Us</h3>
                             <div className="flex space-x-4">
                                 <div className="p-2 bg-gray-800/50 border border-gray-700/50 rounded-full hover:bg-cyan-600 hover:border-cyan-500 transition-all duration-300 cursor-pointer transform hover:scale-110">
-                                    <Facebook className="h-5 w-5 md:h-6 md:w-6" />
+                                    <Facebook className="h-5 w-5" />
                                 </div>
                                 <div className="p-2 bg-gray-800/50 border border-gray-700/50 rounded-full hover:bg-green-600 hover:border-green-500 transition-all duration-300 cursor-pointer transform hover:scale-110">
-                                    <Twitter className="h-5 w-5 md:h-6 md:w-6" />
+                                    <Twitter className="h-5 w-5" />
                                 </div>
                                 <div className="p-2 bg-gray-800/50 border border-gray-700/50 rounded-full hover:bg-purple-600 hover:border-purple-500 transition-all duration-300 cursor-pointer transform hover:scale-110">
-                                    <Instagram className="h-5 w-5 md:h-6 md:w-6" />
+                                    <Instagram className="h-5 w-5" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="border-t border-gray-800/50 mt-6 md:mt-8 pt-6 md:pt-8 text-center">
-                        <p className="text-gray-400 text-sm md:text-base">© 2024 LoveConnect. All rights reserved.</p>
+                        <p className="text-gray-400 text-sm md:text-base">© 2024 Techizebuilder. All rights reserved.</p>
                     </div>
                 </div>
             </footer>
