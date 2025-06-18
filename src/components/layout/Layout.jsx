@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
-import { Navbar } from './Navbar';
-import { Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Outlet } from "react-router-dom";
+import { Sidebar } from "./Sidebar";
+import { Navbar } from "./Navbar";
+import { Menu, X } from "lucide-react";
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,8 +17,8 @@ export function Layout() {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
@@ -34,8 +34,8 @@ export function Layout() {
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 z-30 transform overflow-y-auto bg-white transition-all duration-300 ease-in-out dark:bg-gray-900 lg:static lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${sidebarCollapsed ? 'w-16' : 'w-64'}`}
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } ${sidebarCollapsed ? "w-16" : "w-64"}`}
       >
         <Sidebar
           onClose={() => setSidebarOpen(false)}
@@ -45,16 +45,19 @@ export function Layout() {
       </div>
 
       {/* Main content */}
-      <div className={`flex flex-1 flex-col transition-all duration-300 ${
-        sidebarCollapsed ? '' : ''
-      }`}>
+      <div
+        className={`flex flex-1 flex-col transition-all duration-300 ${
+          sidebarCollapsed ? "" : ""
+        }`}
+      >
         {/* Announcement Banner */}
         {showAnnouncement && (
           <div className="relative w-full bg-blue-600 px-4 py-3 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <p className="text-sm font-medium">
-                  🎉 Welcome to the new admin dashboard! Check out our latest features.
+                  🎉 Welcome to the new admin dashboard! Check out our latest
+                  features.
                 </p>
                 <a
                   href="#"
