@@ -1,33 +1,34 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { Layout } from './components/layout/Layout';
-import { Login } from './pages/auth/Login';
-import { Register } from './pages/auth/Register';
-import { ForgotPassword } from './pages/auth/ForgotPassword';
-import { Dashboard } from './pages/Dashboard';
-import { Users } from './pages/Users';
-import { Admins } from './pages/Admins';
-import { Chats } from './pages/Chats';
-import { Subscriptions } from './pages/Subscriptions';
-import { Payments } from './pages/Payments';
-import { Questions } from './pages/Questions';
-import { Notifications } from './pages/Notifications';
-import { Reports } from './pages/Reports';
-import { BannedUsers } from './pages/BannedUsers';
-import { Interests } from './pages/Interests';
-import { IntroScreens } from './pages/IntroScreens';
-import { Settings } from './pages/Settings';
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { Layout } from "./components/layout/Layout";
+import { Login } from "./pages/auth/Login";
+import { Register } from "./pages/auth/Register";
+import { ForgotPassword } from "./pages/auth/ForgotPassword";
+import { Dashboard } from "./pages/Dashboard";
+import { Users } from "./pages/Users";
+import { Admins } from "./pages/Admins";
+import { Chats } from "./pages/Chats";
+import { Subscriptions } from "./pages/Subscriptions";
+import { Payments } from "./pages/Payments";
+import { Questions } from "./pages/Questions";
+import { Notifications } from "./pages/Notifications";
+import { Reports } from "./pages/Reports";
+import { BannedUsers } from "./pages/BannedUsers";
+import { Interests } from "./pages/Interests";
+import { IntroScreens } from "./pages/IntroScreens";
+import { Settings } from "./pages/Settings";
 // import { Verification } from './pages/Verification';
-import { ActivityLogs } from './pages/ActivityLogs';
-import { EmailTemplates } from './pages/EmailTemplates';
-import { Support } from './pages/Support';
-import { Profile } from './pages/Profile';
-import { useAuthStore } from './store/useAuthStore';
-import { ResetPassword } from './pages/auth/ResetPassword';
-import { LandingPage } from './pages/LandingPage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import TermsConditionsPage from './pages/TermsConditionsPage';
+import { ActivityLogs } from "./pages/ActivityLogs";
+import { EmailTemplates } from "./pages/EmailTemplates";
+import { Support } from "./pages/Support";
+import { Profile } from "./pages/Profile";
+import { useAuthStore } from "./store/useAuthStore";
+import { ResetPassword } from "./pages/auth/ResetPassword";
+import { LandingPage } from "./pages/LandingPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsConditionsPage from "./pages/TermsConditionsPage";
+import TermsOfUse from "./pages/TermsOfUse";
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -51,17 +52,17 @@ function App() {
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#333',
-            color: '#fff',
+            background: "#333",
+            color: "#fff",
           },
           success: {
             style: {
-              background: '#059669',
+              background: "#059669",
             },
           },
           error: {
             style: {
-              background: '#DC2626',
+              background: "#DC2626",
             },
           },
         }}
@@ -75,6 +76,7 @@ function App() {
         <Route path="/reset-password/" element={<ResetPassword />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-conditions" element={<TermsConditionsPage />} />
+        <Route path="/terms-of-use" element={<TermsOfUse />} />
 
         {/* Protected Routes */}
         <Route
@@ -108,6 +110,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
 
 export default App;
