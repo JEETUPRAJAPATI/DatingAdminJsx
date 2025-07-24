@@ -28,7 +28,7 @@ import { ResetPassword } from "./pages/auth/ResetPassword";
 import { LandingPage } from "./pages/LandingPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsConditionsPage from "./pages/TermsConditionsPage";
-import TermsOfUse from "./pages/TermsOfUse";
+import DeleteAccountRequest from "./pages/TermsOfUse";
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -76,7 +76,7 @@ function App() {
         <Route path="/reset-password/" element={<ResetPassword />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-conditions" element={<TermsConditionsPage />} />
-        <Route path="/terms-of-use" element={<TermsOfUse />} />
+        <Route path="/delete-account" element={<DeleteAccountRequest />} />
 
         {/* Protected Routes */}
         <Route

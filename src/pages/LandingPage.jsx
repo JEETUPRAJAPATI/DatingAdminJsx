@@ -332,10 +332,10 @@ export const LandingPage = () => {
                 Terms & Conditions
               </a>
               <a
-                href="/terms-of-use"
+                href="/delete-account"
                 className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
               >
-                Terms Of Use
+                Delete Account
               </a>
             </nav>
 
@@ -1214,10 +1214,10 @@ export const LandingPage = () => {
                   Terms & Conditions
                 </a>
                 <a
-                  href="/terms-of-use"
+                  href="/delete-account"
                   className="block text-gray-400 hover:text-cyan-400 transition-colors text-sm"
                 >
-                  Terms Of Use
+                  Delete Account
                 </a>
               </div>
             </div>
